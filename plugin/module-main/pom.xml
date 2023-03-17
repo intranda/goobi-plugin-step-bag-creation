@@ -16,6 +16,11 @@
     <finalName>${jar.name}</finalName>
     <sourceDirectory>${project.basedir}/../src/main/java</sourceDirectory>
     <testSourceDirectory>${project.basedir}/../src/test/java</testSourceDirectory>
+    <testResources>
+      <testResource>
+        <directory>${project.basedir}/../src/test/resources</directory>
+      </testResource>
+    </testResources>
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>

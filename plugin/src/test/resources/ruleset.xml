@@ -592,6 +592,11 @@
     <language name="es">DOI</language>
   </MetadataType>
   <MetadataType>
+    <Name>_PROCESSID</Name>
+    <language name="de">Vorgangsid</language>
+    <language name="en">Process id</language>
+  </MetadataType>  
+  <MetadataType>
     <Name>Barcode</Name>
     <language name="de">Barcode</language>
     <language name="en">Barcode</language>
@@ -2884,6 +2889,8 @@
     <metadata num="1o">_dateDigitization</metadata>
     <metadata num="1o">ResourceLink</metadata>
     <metadata num="1o">Copyright</metadata>
+    <metadata num="1o">DOI</metadata>
+    <metadata num="1o">_PROCESSID</metadata>
   </DocStrctType>
   <DocStrctType>
     <Name>Obituary</Name>
@@ -6049,6 +6056,12 @@
         <InternalName>DOI</InternalName>
         <WriteXPath>./mods:mods/#mods:identifier[@type='DOI']</WriteXPath>
       </Metadata>
+       <Metadata>
+        <InternalName>_PROCESSID</InternalName>
+        <WriteXPath>./mods:mods/#mods:identifier[@type='GOOBI']</WriteXPath>
+      </Metadata>
+
+      
       <Metadata>
         <InternalName>singleDigCollection</InternalName>
         <WriteXPath>./mods:mods/#mods:classification[@authority='ivdcc']

@@ -25,6 +25,7 @@ import java.util.HashMap;
 
 import org.goobi.beans.Process;
 import org.goobi.beans.Project;
+import org.goobi.beans.ProjectFileGroup;
 import org.goobi.beans.Step;
 import org.goobi.production.enums.PluginGuiType;
 import org.goobi.production.enums.PluginReturnValue;
@@ -32,6 +33,7 @@ import org.goobi.production.enums.PluginType;
 import org.goobi.production.enums.StepReturnValue;
 import org.goobi.production.plugin.interfaces.IStepPluginVersion2;
 
+import de.sub.goobi.export.download.ExportMets;
 import de.sub.goobi.helper.VariableReplacer;
 import de.sub.goobi.helper.exceptions.SwapException;
 import lombok.Getter;
@@ -41,12 +43,13 @@ import ugh.dl.DocStruct;
 import ugh.dl.Fileformat;
 import ugh.dl.Metadata;
 import ugh.dl.Prefs;
+import ugh.dl.VirtualFileGroup;
 import ugh.exceptions.UGHException;
 import ugh.fileformats.mets.MetsModsImportExport;
 
 @PluginImplementation
 @Log4j2
-public class BagcreationStepPlugin implements IStepPluginVersion2 {
+public class BagcreationStepPlugin extends ExportMets implements IStepPluginVersion2 {
 
     private static final long serialVersionUID = 211912948222450125L;
     @Getter
@@ -141,24 +144,32 @@ public class BagcreationStepPlugin implements IStepPluginVersion2 {
             // obj id -> DOI
             exportFilefoExport.setGoobiID(identifier);
 
-            // write process id as metadata mods/recordInfo/recordIdentifier/@source="GOOBI"
-            Metadata md = new Metadata(prefs.getMetadataTypeByName(""));
-            md.setValue(String.valueOf(process.getId()));
-            ds.addMetadata(md);
+            // write process id as metadata
+            Metadata processid = new Metadata(prefs.getMetadataTypeByName("_PROCESSID"));
+            processid.setValue(String.valueOf(process.getId()));
+            ds.addMetadata(processid);
 
             // generate uuids
             exportFilefoExport.setCreateUUIDs(true);
 
             // create filegroups for each folder/representation
 
-            // master
-            // media?
+            // create mets file for each filegroup?
 
-            // differnet ocr formats
-            // ocr-alto
-            // ocr-txt
-            // ocr-finereader
-            // pdf
+            // TODO get filegrps from config instead of project
+            for (ProjectFileGroup projectFileGroup : project.getFilegroups()) {
+                // check if folder exists
+
+                // generate virtual filegroup
+                VirtualFileGroup virt = new VirtualFileGroup(projectFileGroup.getName(), projectFileGroup.getPath(), projectFileGroup.getMimetype(),
+                        projectFileGroup.getSuffix());
+                exportFilefoExport.getDigitalDocument().getFileSet().addVirtualFileGroup(virt);
+
+            }
+
+            // save file
+
+            exportFilefoExport.write(process.getMetadataFilePath().replace("meta.xml", "export.xml"));
 
         } catch (UGHException | IOException | SwapException e) {
             log.error(e);
@@ -166,7 +177,7 @@ public class BagcreationStepPlugin implements IStepPluginVersion2 {
 
         // collect data from folders
 
-        // create checksums + payload
+        // create checksums + payload + size + creation date for each file in all folders/filegroups
 
         // open exported file, enhance it
 

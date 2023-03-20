@@ -11,13 +11,16 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.MatchResult;
 
 import org.easymock.EasyMock;
 import org.goobi.beans.Process;
 import org.goobi.beans.Project;
+import org.goobi.beans.ProjectFileGroup;
 import org.goobi.beans.Ruleset;
 import org.goobi.beans.Step;
 import org.goobi.beans.User;
+import org.goobi.production.enums.PluginReturnValue;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -30,6 +33,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import de.sub.goobi.config.ConfigurationHelper;
+import de.sub.goobi.helper.JwtHelper;
 import de.sub.goobi.helper.VariableReplacer;
 import de.sub.goobi.helper.enums.StepStatus;
 import de.sub.goobi.metadaten.MetadatenHelper;
@@ -41,7 +45,7 @@ import ugh.fileformats.mets.MetsMods;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ MetadatenHelper.class, VariableReplacer.class, ConfigurationHelper.class, ProcessManager.class,
-        MetadataManager.class })
+        MetadataManager.class, JwtHelper.class })
 
 @PowerMockIgnore({ "javax.management.*", "javax.xml.*", "org.xml.*", "org.w3c.*", "javax.net.ssl.*", "jdk.internal.reflect.*" })
 public class BagcreationPluginTest {
@@ -82,7 +86,14 @@ public class BagcreationPluginTest {
         plugin.initialize(step, "something");
         assertEquals("something", plugin.getReturnPath());
         assertEquals(step.getTitel(), plugin.getStep().getTitel());
+    }
 
+    @Test
+    public void testRun() {
+        BagcreationStepPlugin plugin = new BagcreationStepPlugin();
+        plugin.initialize(step, "something");
+        PluginReturnValue answer = plugin.run();
+        assertEquals(PluginReturnValue.FINISH, answer);
     }
 
     @Before
@@ -109,14 +120,31 @@ public class BagcreationPluginTest {
         EasyMock.expect(configurationHelper.getGoobiContentServerTimeOut()).andReturn(60000).anyTimes();
         EasyMock.expect(configurationHelper.getMetadataFolder()).andReturn(metadataDirectoryName).anyTimes();
         EasyMock.expect(configurationHelper.getRulesetFolder()).andReturn(resourcesFolder).anyTimes();
-        EasyMock.expect(configurationHelper.getProcessImagesMainDirectoryName()).andReturn("00469418X_media").anyTimes();
-        EasyMock.expect(configurationHelper.isUseMasterDirectory()).andReturn(true).anyTimes();
+        EasyMock.expect(configurationHelper.getProcessImagesMainDirectoryName()).andReturn("processtitle_media").anyTimes();
+        EasyMock.expect(configurationHelper.getProcessImagesMasterDirectoryName()).andReturn("master_processtitle_media").anyTimes();
+        EasyMock.expect(configurationHelper.getProcessOcrTxtDirectoryName()).andReturn("processtitle_txt").anyTimes();
+        EasyMock.expect(configurationHelper.getProcessImagesSourceDirectoryName()).andReturn("processtitle_source").anyTimes();
+        EasyMock.expect(configurationHelper.getProcessImportDirectoryName()).andReturn("import").anyTimes();
+        EasyMock.expect(configurationHelper.getScriptsFolder()).andReturn(resourcesFolder).anyTimes();
+        EasyMock.expect(configurationHelper.getGoobiFolder()).andReturn(resourcesFolder).anyTimes();
 
+        EasyMock.expect(configurationHelper.isUseMasterDirectory()).andReturn(true).anyTimes();
+        EasyMock.expect(configurationHelper.isCreateMasterDirectory()).andReturn(false).anyTimes();
+        EasyMock.expect(configurationHelper.isCreateSourceFolder()).andReturn(false).anyTimes();
         EasyMock.expect(configurationHelper.getNumberOfMetaBackups()).andReturn(0).anyTimes();
+
+        PowerMock.mockStatic(JwtHelper.class);
+        EasyMock.expect(JwtHelper.createApiToken(EasyMock.anyString(), EasyMock.anyObject())).andReturn("12356").anyTimes();
+        PowerMock.replay(JwtHelper.class);
+        EasyMock.expect(configurationHelper.getGoobiUrl()).andReturn("").anyTimes();
+
         EasyMock.replay(configurationHelper);
 
         PowerMock.mockStatic(VariableReplacer.class);
-        EasyMock.expect(VariableReplacer.simpleReplace(EasyMock.anyString(), EasyMock.anyObject())).andReturn("00469418X_media").anyTimes();
+        EasyMock.expect(VariableReplacer.simpleReplace(EasyMock.anyString(), EasyMock.anyObject())).andReturn("").anyTimes();
+        List<MatchResult> results = new ArrayList<>();
+        EasyMock.expect(VariableReplacer.findRegexMatches(EasyMock.anyString(), EasyMock.anyString())).andReturn(results).anyTimes();
+
         PowerMock.replay(VariableReplacer.class);
         prefs = new Prefs();
         prefs.loadPrefs(resourcesFolder + "ruleset.xml");
@@ -153,6 +181,16 @@ public class BagcreationPluginTest {
         Project project = new Project();
         project.setTitel("SampleProject");
 
+        ProjectFileGroup pfg = new ProjectFileGroup();
+        pfg.setFolder("master");
+        pfg.setMimetype("image/tiff");
+        pfg.setName("master");
+        pfg.setPath("data/");
+        pfg.setProject(project);
+        pfg.setSuffix(".tif");
+
+        project.getFilegroups().add(pfg);
+
         Process process = new Process();
         process.setTitel("00469418X");
         process.setProjekt(project);
@@ -185,14 +223,35 @@ public class BagcreationPluginTest {
         File imageDirectory = new File(processDirectory.getAbsolutePath(), "images");
         imageDirectory.mkdir();
         // master folder
-        File masterDirectory = new File(imageDirectory.getAbsolutePath(), "00469418X_master");
+        File masterDirectory = new File(imageDirectory.getAbsolutePath(), "master_processtitle_media");
         masterDirectory.mkdir();
 
         // media folder
-        File mediaDirectory = new File(imageDirectory.getAbsolutePath(), "00469418X_media");
+        File mediaDirectory = new File(imageDirectory.getAbsolutePath(), "processtitle_media");
         mediaDirectory.mkdir();
 
-        // TODO add some file
+        // create test files
+        Path sourceFile = Paths.get(resourcesFolder, "sample.tif");
+        createFiles(sourceFile, mediaDirectory.toPath(), "tif");
+        createFiles(sourceFile, masterDirectory.toPath(), "tif");
+
+    }
+
+    private void createFiles(Path sourceFile, Path imageDirectory, String extension) {
+        try {
+            Files.copy(sourceFile, Paths.get(imageDirectory.toString(), "00000001." + extension));
+            Files.copy(sourceFile, Paths.get(imageDirectory.toString(), "00000002." + extension));
+            Files.copy(sourceFile, Paths.get(imageDirectory.toString(), "00000003." + extension));
+            Files.copy(sourceFile, Paths.get(imageDirectory.toString(), "00000004." + extension));
+            Files.copy(sourceFile, Paths.get(imageDirectory.toString(), "00000005." + extension));
+            Files.copy(sourceFile, Paths.get(imageDirectory.toString(), "00000006." + extension));
+            Files.copy(sourceFile, Paths.get(imageDirectory.toString(), "00000007." + extension));
+            Files.copy(sourceFile, Paths.get(imageDirectory.toString(), "00000008." + extension));
+            Files.copy(sourceFile, Paths.get(imageDirectory.toString(), "00000009." + extension));
+            Files.copy(sourceFile, Paths.get(imageDirectory.toString(), "00000010." + extension));
+        } catch (IOException e) {
+
+        }
     }
 
 }

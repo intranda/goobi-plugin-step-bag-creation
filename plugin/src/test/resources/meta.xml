@@ -23,7 +23,8 @@
                      <goobi:metadata name="TitleDocMain">Main title volume</goobi:metadata>
                      <goobi:metadata name="CurrentNo">20</goobi:metadata>
                      <goobi:metadata name="_directionRTL">false</goobi:metadata>
-                     <goobi:metadata name="PhysicalLocation">Location</goobi:metadata>                     
+                     <goobi:metadata name="PhysicalLocation">Location</goobi:metadata>
+                     <goobi:metadata name="DOI">10.33510/nls.js.1511270477762</goobi:metadata>                     
                   </goobi:goobi>
                </mods:extension>
             </mods:mods>
@@ -85,34 +86,34 @@
    <mets:fileSec>
       <mets:fileGrp USE="LOCAL">
          <mets:file ID="FILE_0001" MIMETYPE="image/tiff">
-            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000010.tif"/>
+            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000001.tif"/>
          </mets:file>
          <mets:file ID="FILE_0002" MIMETYPE="image/tiff">
-            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000011.tif"/>
+            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000002.tif"/>
          </mets:file>
          <mets:file ID="FILE_0003" MIMETYPE="image/tiff">
-            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000012.tif"/>
+            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000003.tif"/>
          </mets:file>
          <mets:file ID="FILE_0004" MIMETYPE="image/tiff">
-            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000013.tif"/>
+            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000004.tif"/>
          </mets:file>
          <mets:file ID="FILE_0005" MIMETYPE="image/tiff">
-            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000014.tif"/>
+            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000005.tif"/>
          </mets:file>
          <mets:file ID="FILE_0006" MIMETYPE="image/tiff">
-            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000015.tif"/>
+            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000006.tif"/>
          </mets:file>
          <mets:file ID="FILE_0007" MIMETYPE="image/tiff">
-            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000016.tif"/>
+            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000007.tif"/>
          </mets:file>
          <mets:file ID="FILE_0008" MIMETYPE="image/tiff">
-            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000017.tif"/>
+            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000008.tif"/>
          </mets:file>
          <mets:file ID="FILE_0009" MIMETYPE="image/tiff">
-            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000018.tif"/>
+            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000009.tif"/>
          </mets:file>
          <mets:file ID="FILE_0010" MIMETYPE="image/tiff">
-            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000019.tif"/>
+            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000010.tif"/>
          </mets:file>
       </mets:fileGrp>
    </mets:fileSec>

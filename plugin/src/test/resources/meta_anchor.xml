@@ -12,28 +12,23 @@
             <mods:mods>
                <mods:extension>
                   <goobi:goobi>
-                     <goobi:metadata name="TSL_ATS">basiwa</goobi:metadata>
-                     <goobi:metadata name="PlaceOfPublication">Frankfurt am Main</goobi:metadata>
-                     <goobi:metadata name="PublisherName">Mediadidact, Dt. Fachverl.</goobi:metadata>
-                     <goobi:metadata name="TitleDocMainShort">Basistrainer Warenkunde</goobi:metadata>
-                     <goobi:metadata name="TitleDocSub1">[ein Basistrainer für Mitarbeiter und Auszubildende im Lebensmitteleinzelhandel]</goobi:metadata>
-                     <goobi:metadata name="singleDigCollection">Nachlass Kurt W. Rothschild</goobi:metadata>
+                     <goobi:metadata name="PlaceOfPublication">Place of Publication</goobi:metadata>
+                     <goobi:metadata name="PublisherName">Publisher</goobi:metadata>
+                     <goobi:metadata name="TitleDocMainShort">Sorting title</goobi:metadata>
+                     <goobi:metadata name="TitleDocSub1">Sub title</goobi:metadata>
+                     <goobi:metadata name="singleDigCollection">Collection</goobi:metadata>
                      <goobi:metadata name="DocLanguage">ger</goobi:metadata>
-                     <goobi:metadata name="CatalogIDDigital">AC11655356</goobi:metadata>
-                     <goobi:metadata name="TitleDocMain">Der Basistrainer Warenkunde</goobi:metadata>
+                     <goobi:metadata name="CatalogIDDigital">12345678</goobi:metadata>
+                     <goobi:metadata name="TitleDocMain">Main title</goobi:metadata>
                      <goobi:metadata name="Author" type="person">
-                        <goobi:lastName>Peik</goobi:lastName>
-                        <goobi:firstName>Oliver</goobi:firstName>
-                        <goobi:authorityID>gnd</goobi:authorityID>
-                        <goobi:authorityURI>http://d-nb.info/gnd/</goobi:authorityURI>
-                        <goobi:displayName>Peik, Oliver</goobi:displayName>
+                        <goobi:lastName>Lastname</goobi:lastName>
+                        <goobi:firstName>Firstname</goobi:firstName>
+                        <goobi:displayName>Lastname, Firstname</goobi:displayName>
                      </goobi:metadata>
                      <goobi:metadata name="Author" type="person">
-                        <goobi:lastName>Walla</goobi:lastName>
-                        <goobi:firstName>Jürgen</goobi:firstName>
-                        <goobi:authorityID>gnd</goobi:authorityID>
-                        <goobi:authorityURI>http://d-nb.info/gnd/</goobi:authorityURI>
-                        <goobi:displayName>Walla, Jürgen</goobi:displayName>
+                        <goobi:lastName>Lastname2</goobi:lastName>
+                        <goobi:firstName>Firstname2</goobi:firstName>
+                        <goobi:displayName>Lastname2, Firstname2</goobi:displayName>
                      </goobi:metadata>
                   </goobi:goobi>
                </mods:extension>

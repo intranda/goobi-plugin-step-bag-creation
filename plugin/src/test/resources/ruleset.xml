@@ -83,6 +83,11 @@
     <language name="es">Ubicación física</language>
   </MetadataType>
   <MetadataType>
+    <Name>ResourceLink</Name>
+    <language name="de">Link zur Ressource</language>
+    <language name="en">Resource link</language>
+  </MetadataType>  
+  <MetadataType>
     <Name>Sublocation</Name>
     <language name="de">Besitzende Institution</language>
     <language name="en">Possessing Institution</language>
@@ -605,7 +610,7 @@
     <language name="es">Idioma</language>
     <validationExpression>[a-z]{3}</validationExpression>
     <validationErrorMessage name="de">Der Wert muss ein dreistelliger ISO 639 Code sein. Vorgefunden wurde jedoch der Wert '{}'.</validationErrorMessage>
-    <validationErrorMessage name="en">The value '{}' does not correspond to a three-letter ISO 639 code.</validationErrorMessage>    
+    <validationErrorMessage name="en">The value '{}' does not correspond to a three-letter ISO 639 code.</validationErrorMessage>
   </MetadataType>
   <MetadataType>
     <Name>OrigLanguage</Name>
@@ -623,14 +628,13 @@
     <language name="de">Entstehungsjahr</language>
     <language name="en">Publication year</language>
     <language name="es">Año de publicación</language>
-    </MetadataType>
-    <MetadataType>
-      <Name>PublicationYearSort</Name>
-      <language name="de">normalisiertes Erscheinungsjahr (Sortierung)</language>
-      <language name="en">normalized publication year</language>
-      <validationExpression>\d{4}</validationExpression>
-      <validationErrorMessage name="de">Der Wert muss als Jahreszahl im Format YYYY eingegeben werden.</validationErrorMessage>
-    </MetadataType>    
+    <validationExpression>\d+</validationExpression>
+    <!--
+    <validationExpression>\d{4}(-\d{2}){0,2}</validationExpression>
+    <validationErrorMessage name="de">Der Wert muss entweder als Jahreszahl im Format YYYY oder als Datum im Format YYYY-MM-DD eingegeben werden.</validationErrorMessage>
+    <validationErrorMessage name="en">The value must be entered either as a year in the format YYYY or as a date in the format YYYY-MM-DD.</validationErrorMessage>
+    -->
+  </MetadataType>
   <MetadataType>
     <Name>CatalogIDSuccessorPeriodical</Name>
     <language name="de">PPN der Nachfolger-Zeitschrift</language>
@@ -681,9 +685,9 @@
   </MetadataType>
   <MetadataType>
     <Name>UseAndReproductionLicense</Name>
-    <language name="de">Lizenz</language>
-    <language name="en">License</language>
-    <language name="es">Licencia</language>
+    <language name="de">Nutzungslizenz</language>
+    <language name="en">Licence of use</language>
+    <language name="es">Licencia de uso</language>
   </MetadataType>
   <MetadataType>
     <Name>shelfmarksource</Name>
@@ -760,12 +764,6 @@
     <language name="de">Zählung</language>
     <language name="en">Counter</language>
     <language name="es">Counter zzz</language>
-  </MetadataType>
-  <MetadataType type="person">
-    <Name>Bearbeiter</Name>
-    <language name="de">Bearbeiter</language>
-    <language name="en">Adapter</language>
-    <language name="es">Adaptor</language>
   </MetadataType>
   <MetadataType>
     <Name>Location</Name>
@@ -907,8 +905,9 @@
   </MetadataType>
   <MetadataType>
     <Name>Note</Name>
-    <language name="de">Anmerkung</language>
-    <language name="en">Remark</language>
+    <language name="de">Fußnote</language>
+    <language name="en">Footnote</language>
+    <language name="es">Fußnote zzz</language>
   </MetadataType>
   <MetadataType>
     <Name>BindingNote</Name>
@@ -1032,11 +1031,6 @@
     <language name="en">Statement of responsibility</language>
   </MetadataType>
   <!-- Subjects start -->
-  <MetadataType normdata="true">
-    <Name>Subject</Name>
-    <language name="de">Freies Schlagwort</language>
-    <language name="en">Subject</language>
-  </MetadataType>
   <MetadataType normdata="true" type="corporate">
     <Name>SubjectCorporate</Name>
     <language name="de">Körperschaftenschlagwort</language>
@@ -1237,7 +1231,6 @@
     <metadata num="1o">Sponsorship</metadata>
     <metadata num="*">ReportingYear</metadata>
     <metadata num="1o">PublicationYear</metadata>
-    <metadata DefaultDisplay="true" num="1o">PublicationYearSort</metadata>    
     <metadata num="*">FormatSourcePrint</metadata>
     <metadata num="*">TitleDocParallel</metadata>
     <metadata num="1o">_placeOfElectronicOrigin</metadata>
@@ -1295,6 +1288,8 @@
     <metadata num="*">PhysicalLocation</metadata>
     <metadata num="*">StatementOfResponsibility</metadata>
     <metadata num="*">Abstract</metadata>
+    <metadata num="1o">ResourceLink</metadata>  
+    <metadata num="1o">Copyright</metadata>  
   </DocStrctType>
   <DocStrctType>
     <Name>Appendix</Name>
@@ -1806,7 +1801,6 @@
     <metadata DefaultDisplay="true" num="*">ISBN</metadata>
     <metadata num="*">Sponsorship</metadata>
     <metadata DefaultDisplay="true" num="1o">PublicationYear</metadata>
-    <metadata DefaultDisplay="true" num="1o">PublicationYearSort</metadata>    
     <metadata DefaultDisplay="true" num="*">physicalDescriptionExtent</metadata>
     <metadata num="*">PhysicalDescriptionOther</metadata>
     <metadata num="*">FormatSourcePrint</metadata>
@@ -1883,7 +1877,6 @@
     <metadata num="*">HostInstitution</metadata>
     <metadata num="*">IssuingBody</metadata>
     <metadata num="*">LegislativeBody</metadata>
-    <metadata num="*">Subject</metadata>
     <metadata num="*">SubjectCorporate</metadata>
     <metadata num="*">SubjectForm</metadata>
     <metadata num="*">SubjectGeographic</metadata>
@@ -1900,6 +1893,9 @@
     <metadata num="*">BindingNote</metadata>
     <metadata num="*">CustodialHistory</metadata>
     <metadata num="*">Abstract</metadata>
+    <metadata num="1o">ResourceLink</metadata>
+    <metadata num="1o">Copyright</metadata>
+    <metadata num="1o">_directionRTL</metadata>
   </DocStrctType>
   <DocStrctType topStruct="true">
     <Name>Incunable</Name>
@@ -1951,7 +1947,6 @@
     <metadata DefaultDisplay="true" num="*">ISBN</metadata>
     <metadata num="*">Sponsorship</metadata>
     <metadata DefaultDisplay="true" num="1o">PublicationYear</metadata>
-    <metadata DefaultDisplay="true" num="1o">PublicationYearSort</metadata>    
     <metadata DefaultDisplay="true" num="*">physicalDescriptionExtent</metadata>
     <metadata num="*">PhysicalDescriptionOther</metadata>
     <metadata num="*">FormatSourcePrint</metadata>
@@ -2028,7 +2023,6 @@
     <metadata num="*">HostInstitution</metadata>
     <metadata num="*">IssuingBody</metadata>
     <metadata num="*">LegislativeBody</metadata>
-    <metadata num="*">Subject</metadata>
     <metadata num="*">SubjectCorporate</metadata>
     <metadata num="*">SubjectForm</metadata>
     <metadata num="*">SubjectGeographic</metadata>
@@ -2046,6 +2040,8 @@
     <metadata num="*">CustodialHistory</metadata>
     <metadata num="*">Abstract</metadata>
     <metadata num="1o">_directionRTL</metadata>
+    <metadata num="1o">ResourceLink</metadata>
+    <metadata num="1o">Copyright</metadata>
   </DocStrctType>
   <DocStrctType topStruct="true">
     <Name>Manuscript</Name>
@@ -2102,7 +2098,6 @@
     <metadata num="*">FormatSourcePrint</metadata>
     <metadata num="1o">ContentDescription</metadata>
     <metadata DefaultDisplay="true" num="1o">PublicationYear</metadata>
-    <metadata DefaultDisplay="true" num="1o">PublicationYearSort</metadata>    
     <metadata num="1o">CodexDescription</metadata>
     <metadata num="1o">MMPNumber</metadata>
     <metadata num="1o">_placeOfElectronicOrigin</metadata>
@@ -2172,7 +2167,6 @@
     <metadata num="*">CorporatePhotographer</metadata>
     <metadata num="*">CorporateTranslator</metadata>
     <metadata num="1o">copyrightimageset</metadata>
-    <metadata num="*">Subject</metadata>
     <metadata num="*">SubjectCorporate</metadata>
     <metadata num="*">SubjectForm</metadata>
     <metadata num="*">SubjectGeographic</metadata>
@@ -2192,6 +2186,8 @@
     <metadata num="*">ReproductionNote</metadata>
     <metadata num="*">Abstract</metadata>
     <metadata num="1o">_directionRTL</metadata>
+    <metadata num="1o">ResourceLink</metadata>
+    <metadata num="1o">Copyright</metadata>
   </DocStrctType>
   <DocStrctType topStruct="true">
     <Name>SingleMap</Name>
@@ -2241,7 +2237,6 @@
     <metadata DefaultDisplay="true" num="*">ISBN</metadata>
     <metadata num="*">Sponsorship</metadata>
     <metadata DefaultDisplay="true" num="1o">PublicationYear</metadata>
-    <metadata DefaultDisplay="true" num="1o">PublicationYearSort</metadata>    
     <metadata num="1o">_placeOfElectronicOrigin</metadata>
     <metadata num="1o">CreatorsAllOrigin</metadata>
     <metadata DefaultDisplay="true" num="1o">TSL_ATS</metadata>
@@ -2309,7 +2304,6 @@
     <metadata num="*">HostInstitution</metadata>
     <metadata num="*">IssuingBody</metadata>
     <metadata num="*">LegislativeBody</metadata>
-    <metadata num="*">Subject</metadata>
     <metadata num="*">SubjectCorporate</metadata>
     <metadata num="*">SubjectForm</metadata>
     <metadata num="*">SubjectGeographic</metadata>
@@ -2329,6 +2323,8 @@
     <metadata DefaultDisplay="true" num="*">Coordinates</metadata>
     <metadata num="*">Abstract</metadata>
     <metadata num="1o">_directionRTL</metadata>
+    <metadata num="1o">ResourceLink</metadata>
+    <metadata num="1o">Copyright</metadata>
   </DocStrctType>
   <DocStrctType topStruct="true">
     <Name>MusicSupplies</Name>
@@ -2378,7 +2374,6 @@
     <allowedchildtype>Postscript</allowedchildtype>
     <metadata num="*">Sponsorship</metadata>
     <metadata DefaultDisplay="true" num="1o">PublicationYear</metadata>
-    <metadata DefaultDisplay="true" num="1o">PublicationYearSort</metadata>    
     <metadata DefaultDisplay="true" num="1o">Editor</metadata>
     <metadata num="1o">_placeOfElectronicOrigin</metadata>
     <metadata num="1o">CreatorsAllOrigin</metadata>
@@ -2446,6 +2441,8 @@
     <metadata num="*">Note</metadata>
     <metadata num="*">Abstract</metadata>
     <metadata num="1o">_directionRTL</metadata>
+    <metadata num="1o">ResourceLink</metadata>
+    <metadata num="1o">Copyright</metadata>
   </DocStrctType>
   <DocStrctType topStruct="true">
     <Name>ContainedWork</Name>
@@ -2494,7 +2491,6 @@
     <allowedchildtype>Postscript</allowedchildtype>
     <metadata num="1o">Sponsorship</metadata>
     <metadata DefaultDisplay="true" num="1o">PublicationYear</metadata>
-    <metadata DefaultDisplay="true" num="1o">PublicationYearSort</metadata>    
     <metadata DefaultDisplay="true" num="*">physicalDescriptionExtent</metadata>
     <metadata num="*">PhysicalDescriptionOther</metadata>
     <metadata num="*">FormatSourcePrint</metadata>
@@ -2551,6 +2547,8 @@
     <metadata num="*">Note</metadata>
     <metadata num="*">Abstract</metadata>
     <metadata num="1o">_directionRTL</metadata>
+    <metadata num="1o">ResourceLink</metadata>
+    <metadata num="1o">Copyright</metadata>
   </DocStrctType>
   <DocStrctType>
     <Name>AttachedWork</Name>
@@ -2596,7 +2594,6 @@
     <allowedchildtype>GreyChart</allowedchildtype>
     <metadata num="1o">Sponsorship</metadata>
     <metadata DefaultDisplay="true" num="1o">PublicationYear</metadata>
-    <metadata DefaultDisplay="true" num="1o">PublicationYearSort</metadata>    
     <metadata DefaultDisplay="true" num="*">physicalDescriptionExtent</metadata>
     <metadata num="*">PhysicalDescriptionOther</metadata>
     <metadata num="*">FormatSourcePrint</metadata>
@@ -2676,7 +2673,6 @@
     <allowedchildtype>TitlePage</allowedchildtype>
     <metadata num="1o">Sponsorship</metadata>
     <metadata num="1o">PublicationYear</metadata>
-    <metadata DefaultDisplay="true" num="1o">PublicationYearSort</metadata>    
     <metadata DefaultDisplay="true" num="*">physicalDescriptionExtent</metadata>
     <metadata num="*">PhysicalDescriptionOther</metadata>
     <metadata num="*">FormatSourcePrint</metadata>
@@ -2717,7 +2713,6 @@
     <allowedchildtype>Volume</allowedchildtype>
     <metadata num="1o">Sponsorship</metadata>
     <metadata DefaultDisplay="true" num="1o">PublicationYear</metadata>
-    <metadata DefaultDisplay="true" num="1o">PublicationYearSort</metadata>    
     <metadata num="*">FormatSourcePrint</metadata>
     <metadata num="1o">_placeOfElectronicOrigin</metadata>
     <metadata num="1o">CreatorsAllOrigin</metadata>
@@ -2820,7 +2815,6 @@
     <metadata num="1o">URN</metadata>
     <metadata num="1o">Sponsorship</metadata>
     <metadata num="1o">PublicationYear</metadata>
-    <metadata DefaultDisplay="true" num="1o">PublicationYearSort</metadata>    
     <metadata DefaultDisplay="true" num="*">physicalDescriptionExtent</metadata>
     <metadata num="*">PhysicalDescriptionOther</metadata>
     <metadata num="*">FormatSourcePrint</metadata>
@@ -2887,6 +2881,9 @@
     <metadata num="*">Note</metadata>
     <metadata num="*">Abstract</metadata>
     <metadata num="1o">_directionRTL</metadata>
+    <metadata num="1o">_dateDigitization</metadata>
+    <metadata num="1o">ResourceLink</metadata>
+    <metadata num="1o">Copyright</metadata>
   </DocStrctType>
   <DocStrctType>
     <Name>Obituary</Name>
@@ -2896,7 +2893,6 @@
     <metadata num="*">Author</metadata>
     <metadata num="1o">TitleDocSub1</metadata>
     <metadata num="1o">PublicationYear</metadata>
-    <metadata num="1o">PublicationYearSort</metadata>    
     <metadata num="*">Translator</metadata>
     <metadata DefaultDisplay="true" num="1o">TitleDocMain</metadata>
     <metadata num="*">Creator</metadata>
@@ -3101,7 +3097,6 @@
     <metadata DefaultDisplay="true" num="*">Author</metadata>
     <metadata num="1o">TitleDocSub1</metadata>
     <metadata num="1o">PublicationYear</metadata>
-    <metadata num="1o">PublicationYearSort</metadata>    
     <metadata num="*">Translator</metadata>
     <metadata DefaultDisplay="true" num="1o">TitleDocMain</metadata>
     <metadata num="*">Creator</metadata>
@@ -3120,7 +3115,6 @@
     <metadata num="*">Author</metadata>
     <metadata num="1o">TitleDocSub1</metadata>
     <metadata num="1o">PublicationYear</metadata>
-    <metadata num="1o">PublicationYearSort</metadata>
     <metadata num="*">Translator</metadata>
     <metadata DefaultDisplay="true" num="1o">TitleDocMain</metadata>
     <metadata num="*">Creator</metadata>
@@ -3238,7 +3232,6 @@
     <metadata num="1m">logicalPageNumber</metadata>
     <metadata num="1m">physPageNumber</metadata>
   </DocStrctType>
-
   <DocStrctType>
     <Name>video</Name>
     <language name="de">Video</language>
@@ -3247,7 +3240,6 @@
     <metadata num="1m">logicalPageNumber</metadata>
     <metadata num="1m">physPageNumber</metadata>
   </DocStrctType>
-
   <DocStrctType>
     <Name>object</Name>
     <language name="de">3D Objekt</language>
@@ -3276,16 +3268,8 @@
     <allowedchildtype>audio</allowedchildtype>
     <allowedchildtype>video</allowedchildtype>
     <allowedchildtype>object</allowedchildtype>
-    <metadata num="1o">PhysicalLocation</metadata>
-    <metadata num="1o">datedigit</metadata>
-    <metadata num="1o">shelfmarksource</metadata>
-    <metadata num="1o">mediumsource</metadata>
-    <metadata num="1o">FormatSourcePrint</metadata>
     <metadata num="*">_ucc_id</metadata>
-    <metadata num="1o">shelfmarkarchiveimageset</metadata>
     <metadata num="1o">pathimagefiles</metadata>
-    <metadata num="1o">imagedescr</metadata>
-    <metadata num="1o">copyrightimageset</metadata>
     <metadata num="1o">_urn</metadata>
     <metadata num="1o">_representative</metadata>
   </DocStrctType>
@@ -3396,17 +3380,56 @@
             name (<Groupname> element) and the  name of the Metadata object in which the
             content should be stored.
             ================================================================================ -->
-
     <PicaPlus>
       <Metadata>
-        <Name>Subject</Name>
+        <Name>SubjectTopic</Name>
         <picaMainTag>044K</picaMainTag>
         <picaSubTag>a</picaSubTag>
       </Metadata>
       <Metadata>
-        <Name>Subject</Name>
+        <Name>SubjectTopic</Name>
         <picaMainTag>041A</picaMainTag>
         <picaSubTag>a</picaSubTag>
+      </Metadata>
+      <Metadata>
+        <Name>SubjectTopic</Name>
+        <picaMainTag>244Z</picaMainTag>
+        <picaSubTag>a</picaSubTag>
+      </Metadata>
+      <Metadata>
+        <Name>SubjectCorporate</Name>
+        <picaMainTag>044AK</picaMainTag>
+        <picaSubTag>d</picaSubTag>
+      </Metadata>
+      <Metadata>
+        <Name>SubjectForm</Name>
+        <picaMainTag>013@</picaMainTag>
+        <picaSubTag>0</picaSubTag>
+      </Metadata>
+      <Metadata>
+        <Name>SubjectGeographic</Name>
+        <picaMainTag>044AG</picaMainTag>
+        <picaSubTag>b</picaSubTag>
+      </Metadata>
+      <Metadata>
+        <Name>SubjectPerson</Name>
+        <picaMainTag>044AP</picaMainTag>
+        <picaSubTag>c</picaSubTag>
+      </Metadata>
+      <Metadata>
+        <Name>SubjectTemporal</Name>
+        <picaMainTag>031@01</picaMainTag>
+        <picaSubTag>0</picaSubTag>
+      </Metadata>
+      <Metadata>
+        <Name>SubjectTitle</Name>
+        <picaMainTag>044LT</picaMainTag>
+        <picaSubTag>f</picaSubTag>
+      </Metadata>
+      <Metadata>
+        <Name>SubjectTopic</Name>
+        <picaMainTag>044LS</picaMainTag>
+        <picaSubTag>e</picaSubTag>
       </Metadata>
       <Metadata>
         <Name>PublisherName</Name>
@@ -3474,14 +3497,9 @@
         <picaSubTag>a</picaSubTag>
       </Metadata>
       <Metadata>
-        <Name>PublicationYearSort</Name>
-        <picaMainTag>011@</picaMainTag>
-        <picaSubTag>a</picaSubTag>
-      </Metadata>
-      <Metadata>
         <Name>PublicationYear</Name>
         <picaMainTag>011@</picaMainTag>
-        <picaSubTag>n</picaSubTag>
+        <picaSubTag>a</picaSubTag>
       </Metadata>
       <Metadata>
         <Name>CurrentNo</Name>
@@ -3625,8 +3643,6 @@
         <picaSubTag type="partName">n</picaSubTag>
         <picaSubTag type="identifier">7</picaSubTag>
       </Person>
-
-
       <Metadata>
         <Name>Sublocation</Name>
         <picaMainTag>209A</picaMainTag>
@@ -3668,14 +3684,14 @@
         <picaSubTag>a</picaSubTag>
       </Metadata>
       <Metadata>
+        <Name>shelfmarksource</Name>
         <picaMainTag>209A</picaMainTag>
         <picaSubTag>a</picaSubTag>
-        <Name>shelfmarksource</Name>
       </Metadata>
       <Metadata>
+        <Name>shelfmarksource</Name>
         <picaMainTag>009A</picaMainTag>
         <picaSubTag>a</picaSubTag>
-        <Name>shelfmarksource</Name>
       </Metadata>
       <DocStruct>
         <Name>Periodical</Name>
@@ -3793,7 +3809,7 @@
         <conditionField/>
         <conditionValue/>
         <!-- run the regex and keep the value of $1 -->
-        <fieldReplacement/>
+        <fieldReplacement>s/[\xAC\x98\x9C]//g</fieldReplacement>
         <separateEntries>true</separateEntries>
         <separator>; </separator>
       </Metadata>
@@ -3816,6 +3832,7 @@
           <fieldInd2>any</fieldInd2>
         </field>
         <separateEntries>true</separateEntries>
+        <fieldReplacement>s/[\xAC\x98\x9C]//g</fieldReplacement>
       </Metadata>
       <Metadata>
         <Name>TitleDocParallel</Name>
@@ -3880,7 +3897,6 @@
         <fieldReplacement>s/\(.+\)//g</fieldReplacement>
         <separateEntries>true</separateEntries>
       </Metadata>
-
       <Metadata>
         <Name>DDC</Name>
         <field>
@@ -3896,9 +3912,8 @@
           <fieldInd2>any</fieldInd2>
         </field>
         <separateEntries>false</separateEntries>
-        <separator></separator>
+        <separator/>
       </Metadata>
-
       <Metadata>
         <Name>PlaceOfPublication</Name>
         <field>
@@ -3931,17 +3946,6 @@
         </field>
         <separateEntries>true</separateEntries>
       </Metadata>
-      <Metadata>
-        <Name>PublicationYearSort</Name>
-        <field>
-            <fieldMainTag>008</fieldMainTag>
-            <fieldSubTag>a</fieldSubTag>
-            <fieldInd1>any</fieldInd1>
-            <fieldInd2>any</fieldInd2>
-        </field>
-        <fieldReplacement>s/.{7}(.{4}).*/$1/g</fieldReplacement>
-        <separateEntries>true</separateEntries>
-    </Metadata>      
       <Metadata>
         <Name>PublicationYear</Name>
         <field>
@@ -4197,7 +4201,7 @@
       </Metadata>
       <!-- Subjects start -->
       <Metadata>
-        <Name>Subject</Name>
+        <Name>SubjectTopic</Name>
         <field>
           <fieldMainTag>653</fieldMainTag>
           <fieldSubTag>a</fieldSubTag>
@@ -4337,7 +4341,7 @@
         <identifierReplacement>s/\(.+\)//g</identifierReplacement>
         <conditionField>4</conditionField>
         <conditionValue>/rcp/</conditionValue>
-        <separateEntries>false</separateEntries>
+        <separateEntries>true</separateEntries>
         <separator>; </separator>
       </Person>
       <Person>
@@ -4359,7 +4363,7 @@
         <identifierReplacement>s/\(.+\)//g</identifierReplacement>
         <conditionField>4</conditionField>
         <conditionValue>/ann/</conditionValue>
-        <separateEntries>false</separateEntries>
+        <separateEntries>true</separateEntries>
         <separator>; </separator>
       </Person>
       <Person>
@@ -4403,10 +4407,9 @@
         <identifierReplacement>s/\(.+\)//g</identifierReplacement>
         <conditionField>4</conditionField>
         <conditionValue>/aut/</conditionValue>
-        <separateEntries>false</separateEntries>
+        <separateEntries>true</separateEntries>
         <separator>; </separator>
       </Person>
-
       <Person>
         <Name>Cartographer</Name>
         <field>
@@ -4517,7 +4520,6 @@
         <separateEntries>true</separateEntries>
         <separator>; </separator>
       </Person>
-
       <Person>
         <Name>Dedicator</Name>
         <field>
@@ -4870,7 +4872,6 @@
         <separateEntries>true</separateEntries>
         <separator>; </separator>
       </Person>
-
       <!-- Persons end -->
       <!-- Corporations start -->
       <Corporate>
@@ -4951,7 +4952,6 @@
         <separateEntries>true</separateEntries>
         <separator>; </separator>
       </Corporate>
-
       <Corporate>
         <Name>CorporateCompiler</Name>
         <field>
@@ -5186,7 +5186,6 @@
         <separateEntries>true</separateEntries>
         <separator>; </separator>
       </Corporate>
-
       <Corporate>
         <Name>Degree granting institution</Name>
         <field>
@@ -5896,7 +5895,6 @@
             the MODSName element can have a role-attribute if the value of MODSName is
             "person".
             ================================================================================ -->
-
     <METS>
       <!-- Namespace definitions :
                                 If the METS' <NamespaceDefinition> has the attribute default="true", the METS namespace
@@ -6019,7 +6017,7 @@
       </Metadata>
       <Metadata>
         <InternalName>CatalogIDSource</InternalName>
-        <WriteXPath>./mods:mods/#mods:identifier[@type='DE-75']
+        <WriteXPath>./mods:mods/#mods:identifier[@type='PPNanalog']
         </WriteXPath>
       </Metadata>
       <Metadata>
@@ -6028,7 +6026,7 @@
       </Metadata>
       <Metadata>
         <InternalName>CatalogIDDigital</InternalName>
-        <WriteXPath>./mods:mods/mods:recordInfo/#mods:recordIdentifier[@source='DE-75']
+        <WriteXPath>./mods:mods/mods:recordInfo/#mods:recordIdentifier[@source='gbv-ppn']
         </WriteXPath>
       </Metadata>
       <Metadata>
@@ -6068,11 +6066,8 @@
       </Metadata>
       <Metadata>
         <InternalName>PublicationYear</InternalName>
-        <WriteXPath>./mods:mods/mods:extension/intranda:intranda/#intranda:displayYear</WriteXPath>
-      </Metadata>
-      <Metadata>
-        <InternalName>PublicationYearSort</InternalName>
-        <WriteXPath>./mods:mods/mods:originInfo[1]/#mods:dateIssued[@encoding='w3cdtf'][@keyDate='yes']</WriteXPath>
+        <WriteXPath>./mods:mods/mods:originInfo[1]/#mods:dateIssued[@encoding='iso8601'][@keyDate='yes']
+        </WriteXPath>
       </Metadata>
       <Metadata>
         <InternalName>CatalogIDSuccessorPeriodical</InternalName>
@@ -6179,10 +6174,16 @@
         <WriteXPath>./mods:mods/#mods:accessCondition[@type='use and reproduction'][@href='https://rightsstatements.org/vocab/InC/1.0/']</WriteXPath>
       </Metadata>
       <Metadata>
+        <InternalName>UseAndReproductionLicense</InternalName>
+        <ValueCondition>/^reserved$/</ValueCondition>
+        <ValueRegExp>s/reserved/Wahrnehmung der Rechte durch die VG Wort (§ 51 VGG)/</ValueRegExp>
+        <WriteXPath>./mods:mods/#mods:accessCondition[@type='out of print work']</WriteXPath>
+      </Metadata>
+
+      <Metadata>
         <InternalName>RestrictionOnAccessLicense</InternalName>
         <WriteXPath>./mods:mods/#mods:accessCondition[@type='restriction on access']</WriteXPath>
       </Metadata>
-
       <Metadata>
         <InternalName>PhysicalLocation</InternalName>
         <WriteXPath>./mods:mods/mods:location/#mods:physicalLocation
@@ -6192,6 +6193,10 @@
         <InternalName>shelfmarksource</InternalName>
         <WriteXPath>./mods:mods/mods:location/#mods:shelfLocator
         </WriteXPath>
+      </Metadata>
+         <Metadata>
+        <InternalName>ResourceLink</InternalName>
+        <WriteXPath>./mods:mods/mods:location/#mods:url</WriteXPath>
       </Metadata>
       <Metadata>
         <InternalName>_purl</InternalName>
@@ -6381,6 +6386,12 @@
         <InternalName>URN</InternalName>
         <WriteXPath>./mods:mods/#mods:identifier[@type='urn']</WriteXPath>
       </Metadata>
+      
+      <Metadata>
+        <InternalName>Copyright</InternalName>
+        <WriteXPath>./mods:mods/#mods:note[@type='creation/production credits']</WriteXPath>
+      </Metadata>      
+      
       <!-- Persons start -->
       <Metadata>
         <InternalName>Addressee</InternalName>
@@ -6422,7 +6433,6 @@
         <IdentifierXPath>../mods:name[@authority='gbv'][@ID='']
         </IdentifierXPath>
       </Metadata>
-
       <Metadata>
         <InternalName>Bearbeiter</InternalName>
         <WriteXPath>./mods:mods/#mods:name[@type='personal'][mods:role/mods:roleTerm="edt"[@authority='marcrelator'][@type='code']]
@@ -6493,7 +6503,6 @@
         <IdentifierXPath>../mods:name[@authority='gbv'][@ID='']
         </IdentifierXPath>
       </Metadata>
-
       <Metadata>
         <InternalName>Draftsman</InternalName>
         <WriteXPath>./mods:mods/#mods:name[@type='personal'][mods:role/mods:roleTerm="drm"[@authority='marcrelator'][@type='code']]
@@ -6643,8 +6652,6 @@
         <IdentifierXPath>../mods:name[@authority='gbv'][@ID='']
         </IdentifierXPath>
       </Metadata>
-
-
       <!-- Persons end -->
       <!-- Corporations start -->
       <Metadata>
@@ -6661,7 +6668,6 @@
         <SubNameXPath>./mods:namePart</SubNameXPath>
         <PartNameXPath>./mods:namePart</PartNameXPath>
       </Metadata>
-
       <Metadata>
         <InternalName>CorporateCompiler</InternalName>
         <WriteXPath>./mods:mods/#mods:name[@type='corporate'][mods:role/mods:roleTerm="com"[@authority='marcrelator'][@type='code']]</WriteXPath>
@@ -6725,7 +6731,6 @@
         <SubNameXPath>./mods:namePart</SubNameXPath>
         <PartNameXPath>./mods:namePart</PartNameXPath>
       </Metadata>
-
       <Metadata>
         <InternalName>HostInstitution</InternalName>
         <WriteXPath>./mods:mods/#mods:name[@type='corporate'][mods:role/mods:roleTerm="his"[@authority='marcrelator'][@type='code']]</WriteXPath>
@@ -6750,18 +6755,12 @@
       <!-- Corporations end -->
       <!-- Subjects start -->
       <Metadata>
-        <InternalName>Subject</InternalName>
-        <WriteXPath>./mods:mods/mods:extension/intranda:intranda/#intranda:subject</WriteXPath>
-      </Metadata>
-
-      <Metadata>
         <InternalName>SubjectCorporate</InternalName>
         <WriteXPath>./mods:mods/mods:subject/#mods:name[@type='corporate'][mods:role/mods:roleTerm="oth"[@authority='marcrelator'][@type='code']]</WriteXPath>
         <MainNameXPath>./mods:namePart</MainNameXPath>
         <SubNameXPath>./mods:namePart</SubNameXPath>
         <PartNameXPath>./mods:namePart</PartNameXPath>
       </Metadata>
-
       <Metadata>
         <InternalName>SubjectForm</InternalName>
         <WriteXPath>./mods:mods/#mods:genre</WriteXPath>
@@ -6772,7 +6771,7 @@
       </Metadata>
       <Metadata>
         <InternalName>SubjectPerson</InternalName>
-        <WriteXPath>./mods:mods/mods:extension/intranda:intranda/#intranda:subjectPerson</WriteXPath>
+        <WriteXPath>./mods:mods/mods:subject/#mods:name[@type='person'][mods:role/mods:roleTerm="oth"[@authority='marcrelator'][@type='code']]</WriteXPath>
       </Metadata>
       <Metadata>
         <InternalName>SubjectTopic</InternalName>
@@ -6794,10 +6793,6 @@
       <Metadata>
         <InternalName>_directionRTL</InternalName>
         <WriteXPath>./mods:mods/mods:extension/intranda:intranda/#intranda:directionRTL</WriteXPath>
-      </Metadata>
-      <Metadata>
-        <InternalName>Note</InternalName>
-        <WriteXPath>./mods:mods/#mods:note[@type='source characteristics']</WriteXPath>
       </Metadata>
       <!-- Docstructs -->
       <DocStruct>

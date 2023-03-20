@@ -14,16 +14,16 @@
                   <goobi:goobi>
                      <goobi:metadata name="PublicationYear">2010</goobi:metadata>
                      <goobi:metadata name="physicalDescriptionExtent">200 S.</goobi:metadata>
-                     <goobi:metadata name="FormatSourcePrint">Ein Buch mit mehreren Seiten</goobi:metadata>
-                     <goobi:metadata name="OtherTitle">Anderer titel</goobi:metadata>
-                     <goobi:metadata name="TitleDocMainShort">Nur ein Test</goobi:metadata>
-                     <goobi:metadata name="TitleDocSub1">Untertitel</goobi:metadata>
-                     <goobi:metadata name="singleDigCollection">Nachlass Kurt W. Rothschild</goobi:metadata>
-                     <goobi:metadata name="CatalogIDDigital">AC11701018</goobi:metadata>
-                     <goobi:metadata anchorId="true" name="CatalogIDDigital">AC11655356</goobi:metadata>
-                     <goobi:metadata name="TitleDocMain">Nur ein Test</goobi:metadata>
+                     <goobi:metadata name="OtherTitle">Other title</goobi:metadata>
+                     <goobi:metadata name="TitleDocMainShort">Sorting title volume</goobi:metadata>
+                     <goobi:metadata name="TitleDocSub1">Sub title volume</goobi:metadata>
+                     <goobi:metadata name="singleDigCollection">Collection</goobi:metadata>
+                     <goobi:metadata name="CatalogIDDigital">98765432</goobi:metadata>
+                     <goobi:metadata anchorId="true" name="CatalogIDDigital">12345678</goobi:metadata>
+                     <goobi:metadata name="TitleDocMain">Main title volume</goobi:metadata>
                      <goobi:metadata name="CurrentNo">20</goobi:metadata>
                      <goobi:metadata name="_directionRTL">false</goobi:metadata>
+                     <goobi:metadata name="PhysicalLocation">Location</goobi:metadata>                     
                   </goobi:goobi>
                </mods:extension>
             </mods:mods>
@@ -36,7 +36,7 @@
             <mods:mods>
                <mods:extension>
                   <goobi:goobi>
-                     <goobi:metadata name="TitleDocMain">bild1</goobi:metadata>
+                     <goobi:metadata name="TitleDocMain">Title</goobi:metadata>
                   </goobi:goobi>
                </mods:extension>
             </mods:mods>
@@ -49,7 +49,7 @@
             <mods:mods>
                <mods:extension>
                   <goobi:goobi>
-                     <goobi:metadata name="TitleDocMain">bil2</goobi:metadata>
+                     <goobi:metadata name="TitleDocMain">Title 2</goobi:metadata>
                   </goobi:goobi>
                </mods:extension>
             </mods:mods>
@@ -62,7 +62,7 @@
             <mods:mods>
                <mods:extension>
                   <goobi:goobi>
-                     <goobi:metadata name="TitleDocMain">bild3</goobi:metadata>
+                     <goobi:metadata name="TitleDocMain">Title 3</goobi:metadata>
                   </goobi:goobi>
                </mods:extension>
             </mods:mods>
@@ -75,8 +75,7 @@
             <mods:mods>
                <mods:extension>
                   <goobi:goobi>
-                     <goobi:metadata name="PhysicalLocation">Wirtschaftsuniversität Wien</goobi:metadata>
-                     <goobi:metadata name="pathimagefiles">file:///opt/digiverso/goobi/metadata/6/images/basiwa_AC11701018_test-seb_tif</goobi:metadata>
+                     <goobi:metadata name="pathimagefiles">file:///opt/digiverso/goobi/metadata/6/images/processtitle_tif</goobi:metadata>
                   </goobi:goobi>
                </mods:extension>
             </mods:mods>
@@ -86,34 +85,34 @@
    <mets:fileSec>
       <mets:fileGrp USE="LOCAL">
          <mets:file ID="FILE_0001" MIMETYPE="image/tiff">
-            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/basiwa_AC11701018_test-seb_media/00000010.tif"/>
+            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000010.tif"/>
          </mets:file>
          <mets:file ID="FILE_0002" MIMETYPE="image/tiff">
-            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/basiwa_AC11701018_test-seb_media/00000011.tif"/>
+            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000011.tif"/>
          </mets:file>
          <mets:file ID="FILE_0003" MIMETYPE="image/tiff">
-            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/basiwa_AC11701018_test-seb_media/00000012.tif"/>
+            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000012.tif"/>
          </mets:file>
          <mets:file ID="FILE_0004" MIMETYPE="image/tiff">
-            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/basiwa_AC11701018_test-seb_media/00000013.tif"/>
+            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000013.tif"/>
          </mets:file>
          <mets:file ID="FILE_0005" MIMETYPE="image/tiff">
-            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/basiwa_AC11701018_test-seb_media/00000014.tif"/>
+            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000014.tif"/>
          </mets:file>
          <mets:file ID="FILE_0006" MIMETYPE="image/tiff">
-            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/basiwa_AC11701018_test-seb_media/00000015.tif"/>
+            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000015.tif"/>
          </mets:file>
          <mets:file ID="FILE_0007" MIMETYPE="image/tiff">
-            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/basiwa_AC11701018_test-seb_media/00000016.tif"/>
+            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000016.tif"/>
          </mets:file>
          <mets:file ID="FILE_0008" MIMETYPE="image/tiff">
-            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/basiwa_AC11701018_test-seb_media/00000017.tif"/>
+            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000017.tif"/>
          </mets:file>
          <mets:file ID="FILE_0009" MIMETYPE="image/tiff">
-            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/basiwa_AC11701018_test-seb_media/00000018.tif"/>
+            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000018.tif"/>
          </mets:file>
          <mets:file ID="FILE_0010" MIMETYPE="image/tiff">
-            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/basiwa_AC11701018_test-seb_media/00000019.tif"/>
+            <mets:FLocat LOCTYPE="URL" xlink:href="file:///opt/digiverso/goobi/metadata/6/images/processtitle_media/00000019.tif"/>
          </mets:file>
       </mets:fileGrp>
    </mets:fileSec>

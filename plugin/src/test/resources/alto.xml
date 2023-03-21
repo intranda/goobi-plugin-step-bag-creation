@@ -1,0 +1,66 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<alto xmlns="http://www.loc.gov/standards/alto/ns-v2#" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.loc.gov/standards/alto/ns-v2# http://www.loc.gov/alto/v2/alto-2-1.xsd">
+  <Description>
+    <MeasurementUnit>pixel</MeasurementUnit>
+    <OCRProcessing ID="IdOcr">
+      <preProcessingStep>
+        <processingAgency>intranda GmbH, www.intranda.com</processingAgency>
+      </preProcessingStep>
+      <ocrProcessingStep>
+        <processingDateTime>2017-12-20</processingDateTime>
+        <processingSoftware>
+          <softwareCreator>ABBYY</softwareCreator>
+          <softwareName>ABBYY FineReader Engine</softwareName>
+          <softwareVersion>11</softwareVersion>
+        </processingSoftware>
+      </ocrProcessingStep>
+    </OCRProcessing>
+  </Description>
+  <Styles>
+  </Styles>
+  <Layout>
+    <Page ID="Page_4" PHYSICAL_IMG_NR="1" HEIGHT="2592" WIDTH="5388">
+      <TopMargin HEIGHT="294" WIDTH="5388" VPOS="0" HPOS="0">
+      </TopMargin>
+      <LeftMargin HEIGHT="1166" WIDTH="1716" VPOS="294" HPOS="0">
+      </LeftMargin>
+      <RightMargin HEIGHT="1166" WIDTH="1088" VPOS="294" HPOS="4300">
+      </RightMargin>
+      <BottomMargin HEIGHT="1132" WIDTH="5388" VPOS="1460" HPOS="0">
+      </BottomMargin>
+      <PrintSpace HEIGHT="1166" WIDTH="2584" VPOS="294" HPOS="1716">
+        <TextBlock HEIGHT="82" WIDTH="1940" VPOS="294" HPOS="1716" language="en-US" ID="TextBlock_27">
+          <TextLine HEIGHT="55" WIDTH="1914" VPOS="307" HPOS="1729" ID="TextLine_116">
+            <String WC="0.6899999976" CONTENT="C." HEIGHT="39" WIDTH="60" VPOS="323" HPOS="1729" ID="String_796" />
+            <SP HEIGHT="39" WIDTH="28" VPOS="323" HPOS="1790" />
+            <String WC="0.9950000048" CONTENT="I." HEIGHT="39" WIDTH="24" VPOS="323" HPOS="1819" ID="String_797" />
+            <SP HEIGHT="40" WIDTH="29" VPOS="322" HPOS="1844" />
+            <String WC="0.5099999905" CONTENT="S." HEIGHT="39" WIDTH="56" VPOS="322" HPOS="1874" ID="String_798" />
+            <SP HEIGHT="39" WIDTH="31" VPOS="321" HPOS="1931" />
+            <String WC="1." CONTENT="E." HEIGHT="39" WIDTH="52" VPOS="321" HPOS="1963" ID="String_799" />
+            <SP HEIGHT="39" WIDTH="30" VPOS="320" HPOS="2016" />
+            <String WC="0.5749999881" CONTENT="P." HEIGHT="38" WIDTH="56" VPOS="320" HPOS="2047" ID="String_800" />
+            <SP HEIGHT="17" WIDTH="37" VPOS="341" HPOS="2104" />
+            <String WC="0.5699999928" CONTENT="-" HEIGHT="8" WIDTH="21" VPOS="341" HPOS="2142" ID="String_801" />
+            <SP HEIGHT="38" WIDTH="36" VPOS="319" HPOS="2164" />
+            <String WC="0.7633333206" CONTENT="VIA" HEIGHT="39" WIDTH="109" VPOS="318" HPOS="2201" ID="String_802" />
+            <SP HEIGHT="40" WIDTH="40" VPOS="317" HPOS="2311" />
+            <String WC="0.437142849" CONTENT="DONOTA," HEIGHT="43" WIDTH="315" VPOS="315" HPOS="2352" ID="String_803" />
+            <SP HEIGHT="44" WIDTH="40" VPOS="314" HPOS="2668" />
+            <String WC="0.349999994" CONTENT="3" HEIGHT="40" WIDTH="41" VPOS="314" HPOS="2709" ID="String_804" />
+            <SP HEIGHT="40" WIDTH="40" VPOS="314" HPOS="2751" />
+            <String WC="0.5600000024" CONTENT="-" HEIGHT="8" WIDTH="23" VPOS="334" HPOS="2792" ID="String_805" />
+            <SP HEIGHT="39" WIDTH="40" VPOS="312" HPOS="2816" />
+            <String WC="0.3600000143" CONTENT="34121" HEIGHT="40" WIDTH="193" VPOS="311" HPOS="2857" ID="String_806" />
+            <SP HEIGHT="38" WIDTH="38" VPOS="311" HPOS="3051" />
+            <String WC="0.7699999809" CONTENT="TRIESTE" HEIGHT="40" WIDTH="284" VPOS="309" HPOS="3090" ID="String_807" />
+            <SP HEIGHT="39" WIDTH="39" VPOS="308" HPOS="3375" />
+            <String WC="0.6642857194" CONTENT="[ITALY]" HEIGHT="40" WIDTH="228" VPOS="307" HPOS="3415" ID="String_808" />
+          </TextLine>
+        </TextBlock>
+        <Illustration ID="Page1_Block2" HEIGHT="694" WIDTH="684" VPOS="766" HPOS="3616" />
+        <GraphicalElement ID="Page1_Block3" HEIGHT="8" WIDTH="150" VPOS="766" HPOS="3946" />
+      </PrintSpace>
+    </Page>
+  </Layout>
+</alto>

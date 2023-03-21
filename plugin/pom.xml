@@ -5,7 +5,7 @@
   <version>1.0.0</version>
   <packaging>pom</packaging>
   <properties>
-    <goobi.version>23.03.2</goobi.version>
+    <goobi.version>23.03.3-SNAPSHOT</goobi.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <junit.version>4.13.2</junit.version>
      <powermock.version>2.0.9</powermock.version>
@@ -37,6 +37,25 @@
       <version>1.18.22</version>
       <scope>provided</scope>
     </dependency>
+<dependency>
+            <groupId>de.intranda.ugh</groupId>
+            <artifactId>ugh-core</artifactId>
+            <version>5.0.16-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>poi</groupId>
+                    <artifactId>poi</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>bouncycastle</groupId>
+                    <artifactId>bcprov-jdk14</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>    
     <!-- https://mvnrepository.com/artifact/junit/junit -->
         <dependency>
             <groupId>junit</groupId>

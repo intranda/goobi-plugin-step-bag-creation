@@ -2,6 +2,7 @@ package de.intranda.goobi.plugins;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,11 +17,13 @@ import java.util.regex.MatchResult;
 import org.easymock.EasyMock;
 import org.goobi.beans.Process;
 import org.goobi.beans.Project;
-import org.goobi.beans.ProjectFileGroup;
 import org.goobi.beans.Ruleset;
 import org.goobi.beans.Step;
 import org.goobi.beans.User;
 import org.goobi.production.enums.PluginReturnValue;
+import org.jdom2.Document;
+import org.jdom2.Element;
+import org.jdom2.Namespace;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -35,6 +38,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import de.sub.goobi.config.ConfigurationHelper;
 import de.sub.goobi.helper.JwtHelper;
 import de.sub.goobi.helper.VariableReplacer;
+import de.sub.goobi.helper.XmlTools;
 import de.sub.goobi.helper.enums.StepStatus;
 import de.sub.goobi.metadaten.MetadatenHelper;
 import de.sub.goobi.persistence.managers.MetadataManager;
@@ -45,7 +49,7 @@ import ugh.fileformats.mets.MetsMods;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ MetadatenHelper.class, VariableReplacer.class, ConfigurationHelper.class, ProcessManager.class,
-        MetadataManager.class, JwtHelper.class })
+    MetadataManager.class, JwtHelper.class })
 
 @PowerMockIgnore({ "javax.management.*", "javax.xml.*", "org.xml.*", "org.w3c.*", "javax.net.ssl.*", "jdk.internal.reflect.*" })
 public class BagcreationPluginTest {
@@ -60,6 +64,9 @@ public class BagcreationPluginTest {
     private Process process;
     private Step step;
     private Prefs prefs;
+
+    private static final Namespace metsNamespace = Namespace.getNamespace("mets", "http://www.loc.gov/METS/");
+    private static final Namespace modsNamespace= Namespace.getNamespace("mods", "http://www.loc.gov/mods/v3");
 
     @BeforeClass
     public static void setUpClass() throws Exception {
@@ -86,14 +93,30 @@ public class BagcreationPluginTest {
         plugin.initialize(step, "something");
         assertEquals("something", plugin.getReturnPath());
         assertEquals(step.getTitel(), plugin.getStep().getTitel());
+
+
     }
 
     @Test
-    public void testRun() {
+    public void testRun() throws Exception {
         BagcreationStepPlugin plugin = new BagcreationStepPlugin();
         plugin.initialize(step, "something");
         PluginReturnValue answer = plugin.run();
         assertEquals(PluginReturnValue.FINISH, answer);
+        String metsfile = process.getMetadataFilePath().replace("meta.xml", "export.xml");
+
+        assertTrue(Files.exists(Paths.get(metsfile)));
+
+        Document doc = XmlTools.getSAXBuilder().build(metsfile);
+        Element mets = doc.getRootElement();
+        assertEquals("10.33510/nls.js.1511270477762", mets.getAttributeValue("OBJID"));
+        Element dmdSec = mets.getChild("dmdSec", metsNamespace);
+        Element mods = dmdSec.getChild("mdWrap", metsNamespace).getChild("xmlData", metsNamespace).getChild("mods", modsNamespace);
+        assertEquals("Main title volume", mods.getChild("titleInfo", modsNamespace).getChild("title", modsNamespace).getText());
+
+        Element fileSec =  mets.getChild("fileSec", metsNamespace);
+        assertEquals(2, fileSec.getChildren().size());
+
     }
 
     @Before
@@ -120,9 +143,12 @@ public class BagcreationPluginTest {
         EasyMock.expect(configurationHelper.getGoobiContentServerTimeOut()).andReturn(60000).anyTimes();
         EasyMock.expect(configurationHelper.getMetadataFolder()).andReturn(metadataDirectoryName).anyTimes();
         EasyMock.expect(configurationHelper.getRulesetFolder()).andReturn(resourcesFolder).anyTimes();
+        EasyMock.expect(configurationHelper.getConfigurationFolder()).andReturn(resourcesFolder).anyTimes();
         EasyMock.expect(configurationHelper.getProcessImagesMainDirectoryName()).andReturn("processtitle_media").anyTimes();
         EasyMock.expect(configurationHelper.getProcessImagesMasterDirectoryName()).andReturn("master_processtitle_media").anyTimes();
         EasyMock.expect(configurationHelper.getProcessOcrTxtDirectoryName()).andReturn("processtitle_txt").anyTimes();
+        EasyMock.expect(configurationHelper.getProcessOcrXmlDirectoryName()).andReturn("processtitle_xml").anyTimes();
+        EasyMock.expect(configurationHelper.getProcessOcrPdfDirectoryName()).andReturn("processtitle_pdf").anyTimes();
         EasyMock.expect(configurationHelper.getProcessImagesSourceDirectoryName()).andReturn("processtitle_source").anyTimes();
         EasyMock.expect(configurationHelper.getProcessImportDirectoryName()).andReturn("import").anyTimes();
         EasyMock.expect(configurationHelper.getScriptsFolder()).andReturn(resourcesFolder).anyTimes();
@@ -155,8 +181,8 @@ public class BagcreationPluginTest {
         EasyMock.expect(MetadatenHelper.getMetaFileType(EasyMock.anyString())).andReturn("mets").anyTimes();
         EasyMock.expect(MetadatenHelper.getFileformatByName(EasyMock.anyString(), EasyMock.anyObject())).andReturn(ff).anyTimes();
         EasyMock.expect(MetadatenHelper.getMetadataOfFileformat(EasyMock.anyObject(), EasyMock.anyBoolean()))
-                .andReturn(Collections.emptyMap())
-                .anyTimes();
+        .andReturn(Collections.emptyMap())
+        .anyTimes();
         PowerMock.replay(MetadatenHelper.class);
 
         PowerMock.mockStatic(MetadataManager.class);
@@ -181,26 +207,18 @@ public class BagcreationPluginTest {
         Project project = new Project();
         project.setTitel("SampleProject");
 
-        ProjectFileGroup pfg = new ProjectFileGroup();
-        pfg.setFolder("master");
-        pfg.setMimetype("image/tiff");
-        pfg.setName("master");
-        pfg.setPath("data/");
-        pfg.setProject(project);
-        pfg.setSuffix(".tif");
-
-        project.getFilegroups().add(pfg);
-
         Process process = new Process();
         process.setTitel("00469418X");
         process.setProjekt(project);
         process.setId(1);
+
         List<Step> steps = new ArrayList<>();
         step = new Step();
         step.setReihenfolge(1);
         step.setProzess(process);
         step.setTitel("test step");
         step.setBearbeitungsstatusEnum(StepStatus.OPEN);
+
         User user = new User();
         user.setVorname("Firstname");
         user.setNachname("Lastname");
@@ -230,11 +248,19 @@ public class BagcreationPluginTest {
         File mediaDirectory = new File(imageDirectory.getAbsolutePath(), "processtitle_media");
         mediaDirectory.mkdir();
 
-        // create test files
-        Path sourceFile = Paths.get(resourcesFolder, "sample.tif");
-        createFiles(sourceFile, mediaDirectory.toPath(), "tif");
-        createFiles(sourceFile, masterDirectory.toPath(), "tif");
+        // ocr folder
+        File ocrDirectory = new File(processDirectory.getAbsolutePath(), "ocr");
+        ocrDirectory.mkdir();
+        File altoDirectory = new File(ocrDirectory.getAbsolutePath(), "processtitle_xml");
+        altoDirectory.mkdir();
 
+        // create test files
+        Path sourceImageFile = Paths.get(resourcesFolder, "sample.tif");
+        createFiles(sourceImageFile, mediaDirectory.toPath(), "tif");
+        createFiles(sourceImageFile, masterDirectory.toPath(), "tif");
+
+        Path sourceAltoFile = Paths.get(resourcesFolder, "alto.xml");
+        createFiles(sourceAltoFile, altoDirectory.toPath(), "xml");
     }
 
     private void createFiles(Path sourceFile, Path imageDirectory, String extension) {

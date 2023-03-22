@@ -1,5 +1,6 @@
 package de.intranda.goobi.plugins;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,6 +45,8 @@ import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.JDOMException;
 import org.jdom2.Namespace;
+import org.jdom2.output.Format;
+import org.jdom2.output.XMLOutputter;
 
 import de.sub.goobi.config.ConfigPlugins;
 import de.sub.goobi.config.ConfigurationHelper;
@@ -129,7 +132,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             log.error(e);
             return PluginReturnValue.ERROR;
         }
-
+        Map<String, List<Path>> files = new HashMap<>();
         try {
             // read metadata
             Fileformat fileformat = process.readMetadataFile();
@@ -155,38 +158,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             MetsModsImportExport exportFilefoExport = new MetsModsImportExport(prefs);
             exportFilefoExport.setDigitalDocument(fileformat.getDigitalDocument());
             exportFilefoExport.setWriteLocal(false);
-
-            // project parameter
-            exportFilefoExport.setRightsOwner(vp.replace(project.getMetsRightsOwner()));
-            exportFilefoExport.setRightsOwnerLogo(vp.replace(project.getMetsRightsOwnerLogo()));
-            exportFilefoExport.setRightsOwnerSiteURL(vp.replace(project.getMetsRightsOwnerSite()));
-            exportFilefoExport.setRightsOwnerContact(vp.replace(project.getMetsRightsOwnerMail()));
-            exportFilefoExport.setDigiprovPresentation(vp.replace(project.getMetsDigiprovPresentation()));
-            exportFilefoExport.setDigiprovReference(vp.replace(project.getMetsDigiprovReference()));
-            exportFilefoExport.setDigiprovPresentationAnchor(vp.replace(project.getMetsDigiprovPresentationAnchor()));
-            exportFilefoExport.setDigiprovReferenceAnchor(vp.replace(project.getMetsDigiprovReferenceAnchor()));
-
-            exportFilefoExport.setMetsRightsLicense(vp.replace(project.getMetsRightsLicense()));
-            exportFilefoExport.setMetsRightsSponsor(vp.replace(project.getMetsRightsSponsor()));
-            exportFilefoExport.setMetsRightsSponsorLogo(vp.replace(project.getMetsRightsSponsorLogo()));
-            exportFilefoExport.setMetsRightsSponsorSiteURL(vp.replace(project.getMetsRightsSponsorSiteURL()));
-
-            exportFilefoExport.setIIIFUrl(vp.replace(project.getMetsIIIFUrl()));
-            exportFilefoExport.setSruUrl(vp.replace(project.getMetsSruUrl()));
-            exportFilefoExport.setPurlUrl(vp.replace(project.getMetsPurl()));
-            exportFilefoExport.setContentIDs(vp.replace(project.getMetsContentIDs()));
-
-            // mets pointer between anchor and volume
-            String pointer = project.getMetsPointerPath();
-            pointer = vp.replace(pointer);
-            exportFilefoExport.setMptrUrl(pointer);
-
-            String anchor = project.getMetsPointerPathAnchor();
-            pointer = vp.replace(anchor);
-            exportFilefoExport.setMptrAnchorUrl(pointer);
-
-            // obj id -> DOI
-            exportFilefoExport.setGoobiID(identifier);
+            exportFilefoExport.getDigitalDocument().addAllContentFiles();
 
             // write process id as metadata
             Metadata processid = new Metadata(prefs.getMetadataTypeByName("_PROCESSID"));
@@ -200,13 +172,20 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             for (ProjectFileGroup projectFileGroup : filegroups) {
                 // check if folder exists
                 Path sourceFolder = getSourceFolder(projectFileGroup.getFolder());
+
                 if (StorageProvider.getInstance().isFileExists(sourceFolder)) {
+                    files.put(projectFileGroup.getName(), StorageProvider.getInstance().listFiles(sourceFolder.toString()));
                     // generate filegroup
                     VirtualFileGroup virt = new VirtualFileGroup(projectFileGroup.getName(), projectFileGroup.getPath(), projectFileGroup.getMimetype(),
                             projectFileGroup.getSuffix());
                     exportFilefoExport.getDigitalDocument().getFileSet().addVirtualFileGroup(virt);
                 }
             }
+
+            // project parameter
+            setProjectParameter(identifier, vp, exportFilefoExport);
+
+
             // save file
             exportFilefoExport.write(tempfolder.toString() + "/export.xml");
         } catch (UGHException | IOException | SwapException e) {
@@ -216,14 +195,39 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         try {
             Document doc = XmlTools.getSAXBuilder().build(tempfolder.toString() + "/export.xml");
             Element mets = doc.getRootElement();
+
+            Element fileSec = mets.getChild("fileSec", metsNamespace);
+            for (Element fileGrp : fileSec.getChildren("fileGrp", metsNamespace)) {
+                fileGrp.setAttribute("ID", UUID.randomUUID().toString());
+
+
+                String name = fileGrp.getAttributeValue("USE");
+                List<Path> filesInFolder = files.get(name);
+                List<Element> filesInXml = fileGrp.getChildren("file", metsNamespace);
+                for (int i = 0; i < filesInXml.size(); i++) {
+                    Element fileElement = filesInXml.get(i);
+                    Path file = filesInFolder.get(i);
+                    // checksum, filesize, changedate
+
+                    fileElement.setAttribute("SIZE", ""+   StorageProvider.getInstance().getFileSize(file));
+                    fileElement.setAttribute("CREATED", StorageProvider.getInstance().getFileCreationTime(file));
+                    fileElement.setAttribute("CHECKSUM", StorageProvider.getInstance().createSha256Checksum(file));
+                    fileElement.setAttribute("CHECKSUMTYPE", "SHA-256");
+                }
+            }
+
+            XMLOutputter xmlOut = new XMLOutputter(Format.getPrettyFormat());
+            FileOutputStream fos = new FileOutputStream(tempfolder.toString() + "/export.xml");
+            xmlOut.output(doc, fos);
+            fos.close();
+
         } catch (JDOMException | IOException e) {
             log.error(e);
         }
 
 
         // collect data from folders
-        Map<Path, List<Path>> allData = process.getAllFolderAndFiles();
-        System.out.println(allData);
+
         // create checksums + payload + size + creation date for each file in all folders/filegroups
 
 
@@ -238,6 +242,39 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         //        StorageProvider.getInstance().deleteDir(tempfolder);
 
         return PluginReturnValue.FINISH;
+    }
+
+    private void setProjectParameter(String identifier, VariableReplacer vp, MetsModsImportExport exportFilefoExport) {
+        exportFilefoExport.setRightsOwner(vp.replace(project.getMetsRightsOwner()));
+        exportFilefoExport.setRightsOwnerLogo(vp.replace(project.getMetsRightsOwnerLogo()));
+        exportFilefoExport.setRightsOwnerSiteURL(vp.replace(project.getMetsRightsOwnerSite()));
+        exportFilefoExport.setRightsOwnerContact(vp.replace(project.getMetsRightsOwnerMail()));
+        exportFilefoExport.setDigiprovPresentation(vp.replace(project.getMetsDigiprovPresentation()));
+        exportFilefoExport.setDigiprovReference(vp.replace(project.getMetsDigiprovReference()));
+        exportFilefoExport.setDigiprovPresentationAnchor(vp.replace(project.getMetsDigiprovPresentationAnchor()));
+        exportFilefoExport.setDigiprovReferenceAnchor(vp.replace(project.getMetsDigiprovReferenceAnchor()));
+
+        exportFilefoExport.setMetsRightsLicense(vp.replace(project.getMetsRightsLicense()));
+        exportFilefoExport.setMetsRightsSponsor(vp.replace(project.getMetsRightsSponsor()));
+        exportFilefoExport.setMetsRightsSponsorLogo(vp.replace(project.getMetsRightsSponsorLogo()));
+        exportFilefoExport.setMetsRightsSponsorSiteURL(vp.replace(project.getMetsRightsSponsorSiteURL()));
+
+        exportFilefoExport.setIIIFUrl(vp.replace(project.getMetsIIIFUrl()));
+        exportFilefoExport.setSruUrl(vp.replace(project.getMetsSruUrl()));
+        exportFilefoExport.setPurlUrl(vp.replace(project.getMetsPurl()));
+        exportFilefoExport.setContentIDs(vp.replace(project.getMetsContentIDs()));
+
+        // mets pointer between anchor and volume
+        String pointer = project.getMetsPointerPath();
+        pointer = vp.replace(pointer);
+        exportFilefoExport.setMptrUrl(pointer);
+
+        String anchor = project.getMetsPointerPathAnchor();
+        pointer = vp.replace(anchor);
+        exportFilefoExport.setMptrAnchorUrl(pointer);
+
+        // obj id -> DOI
+        exportFilefoExport.setGoobiID(identifier);
     }
 
     private Path getSourceFolder(String folder) {

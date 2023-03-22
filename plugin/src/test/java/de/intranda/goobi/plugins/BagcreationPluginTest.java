@@ -48,8 +48,8 @@ import ugh.dl.Prefs;
 import ugh.fileformats.mets.MetsMods;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({ MetadatenHelper.class, VariableReplacer.class, ConfigurationHelper.class, ProcessManager.class,
-    MetadataManager.class, JwtHelper.class })
+@PrepareForTest({ MetadatenHelper.class, VariableReplacer.class, ConfigurationHelper.class, ProcessManager.class, MetadataManager.class,
+    JwtHelper.class })
 
 @PowerMockIgnore({ "javax.management.*", "javax.xml.*", "org.xml.*", "org.w3c.*", "javax.net.ssl.*", "jdk.internal.reflect.*" })
 public class BagcreationPluginTest {
@@ -66,7 +66,7 @@ public class BagcreationPluginTest {
     private Prefs prefs;
 
     private static final Namespace metsNamespace = Namespace.getNamespace("mets", "http://www.loc.gov/METS/");
-    private static final Namespace modsNamespace= Namespace.getNamespace("mods", "http://www.loc.gov/mods/v3");
+    private static final Namespace modsNamespace = Namespace.getNamespace("mods", "http://www.loc.gov/mods/v3");
 
     @BeforeClass
     public static void setUpClass() throws Exception {
@@ -94,7 +94,6 @@ public class BagcreationPluginTest {
         assertEquals("something", plugin.getReturnPath());
         assertEquals(step.getTitel(), plugin.getStep().getTitel());
 
-
     }
 
     @Test
@@ -114,7 +113,7 @@ public class BagcreationPluginTest {
         Element mods = dmdSec.getChild("mdWrap", metsNamespace).getChild("xmlData", metsNamespace).getChild("mods", modsNamespace);
         assertEquals("Main title volume", mods.getChild("titleInfo", modsNamespace).getChild("title", modsNamespace).getText());
 
-        Element fileSec =  mets.getChild("fileSec", metsNamespace);
+        Element fileSec = mets.getChild("fileSec", metsNamespace);
         assertEquals(2, fileSec.getChildren().size());
 
     }
@@ -170,6 +169,8 @@ public class BagcreationPluginTest {
         EasyMock.replay(configurationHelper);
 
         PowerMock.mockStatic(VariableReplacer.class);
+        EasyMock.expect(VariableReplacer.simpleReplace(EasyMock.anyString(), EasyMock.anyObject())).andReturn("master_processtitle_media");
+        EasyMock.expect(VariableReplacer.simpleReplace(EasyMock.anyString(), EasyMock.anyObject())).andReturn("processtitle_xml");
         EasyMock.expect(VariableReplacer.simpleReplace(EasyMock.anyString(), EasyMock.anyObject())).andReturn("").anyTimes();
         List<MatchResult> results = new ArrayList<>();
         EasyMock.expect(VariableReplacer.findRegexMatches(EasyMock.anyString(), EasyMock.anyString())).andReturn(results).anyTimes();

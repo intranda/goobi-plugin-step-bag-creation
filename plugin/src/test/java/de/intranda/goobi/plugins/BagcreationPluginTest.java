@@ -103,7 +103,7 @@ public class BagcreationPluginTest {
         plugin.initialize(step, "something");
         PluginReturnValue answer = plugin.run();
         assertEquals(PluginReturnValue.FINISH, answer);
-        String metsfile = process.getMetadataFilePath().replace("meta.xml", "export.xml");
+        String metsfile = plugin.getTempfolder().toString() + "/export.xml";
 
         assertTrue(Files.exists(Paths.get(metsfile)));
 
@@ -121,6 +121,8 @@ public class BagcreationPluginTest {
 
     @Before
     public void setUp() throws Exception {
+        File tempdir = folder.newFolder("tmp");
+        tempdir.mkdirs();
         metadataDirectory = folder.newFolder("metadata");
         processDirectory = new File(metadataDirectory + File.separator + "1");
         processDirectory.mkdirs();
@@ -144,6 +146,7 @@ public class BagcreationPluginTest {
         EasyMock.expect(configurationHelper.getMetadataFolder()).andReturn(metadataDirectoryName).anyTimes();
         EasyMock.expect(configurationHelper.getRulesetFolder()).andReturn(resourcesFolder).anyTimes();
         EasyMock.expect(configurationHelper.getConfigurationFolder()).andReturn(resourcesFolder).anyTimes();
+        EasyMock.expect(configurationHelper.getTemporaryFolder()).andReturn(tempdir.getAbsolutePath()).anyTimes();
         EasyMock.expect(configurationHelper.getProcessImagesMainDirectoryName()).andReturn("processtitle_media").anyTimes();
         EasyMock.expect(configurationHelper.getProcessImagesMasterDirectoryName()).andReturn("master_processtitle_media").anyTimes();
         EasyMock.expect(configurationHelper.getProcessOcrTxtDirectoryName()).andReturn("processtitle_txt").anyTimes();

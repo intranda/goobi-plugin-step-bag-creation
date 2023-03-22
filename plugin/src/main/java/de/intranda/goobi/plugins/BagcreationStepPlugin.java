@@ -26,6 +26,8 @@ import java.util.ArrayList;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
@@ -38,11 +40,17 @@ import org.goobi.production.enums.PluginReturnValue;
 import org.goobi.production.enums.PluginType;
 import org.goobi.production.enums.StepReturnValue;
 import org.goobi.production.plugin.interfaces.IStepPluginVersion2;
+import org.jdom2.Document;
+import org.jdom2.Element;
+import org.jdom2.JDOMException;
+import org.jdom2.Namespace;
 
 import de.sub.goobi.config.ConfigPlugins;
+import de.sub.goobi.config.ConfigurationHelper;
 import de.sub.goobi.export.download.ExportMets;
 import de.sub.goobi.helper.StorageProvider;
 import de.sub.goobi.helper.VariableReplacer;
+import de.sub.goobi.helper.XmlTools;
 import de.sub.goobi.helper.exceptions.DAOException;
 import de.sub.goobi.helper.exceptions.SwapException;
 import lombok.Getter;
@@ -60,6 +68,10 @@ import ugh.fileformats.mets.MetsModsImportExport;
 @Log4j2
 public class BagcreationStepPlugin extends ExportMets implements IStepPluginVersion2 {
 
+
+    private static final Namespace metsNamespace = Namespace.getNamespace("mets", "http://www.loc.gov/METS/");
+    private static final Namespace modsNamespace= Namespace.getNamespace("mods", "http://www.loc.gov/mods/v3");
+
     private static final long serialVersionUID = 211912948222450125L;
     @Getter
     private String title = "intranda_step_bagcreation";
@@ -76,6 +88,9 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     private String value;
     @Getter
     private String returnPath;
+
+    @Getter
+    private transient Path tempfolder;
 
     private List<ProjectFileGroup> filegroups = new ArrayList<>();
 
@@ -105,6 +120,15 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     public PluginReturnValue run() {
         String identifier = null;
         VariableReplacer vp = null;
+
+        tempfolder = Paths.get(ConfigurationHelper.getInstance().getTemporaryFolder(), UUID.randomUUID().toString());
+
+        try {
+            StorageProvider.getInstance().createDirectories(tempfolder);
+        } catch (IOException e) {
+            log.error(e);
+            return PluginReturnValue.ERROR;
+        }
 
         try {
             // read metadata
@@ -184,16 +208,24 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 }
             }
             // save file
-            exportFilefoExport.write(process.getMetadataFilePath().replace("meta.xml", "export.xml"));
+            exportFilefoExport.write(tempfolder.toString() + "/export.xml");
         } catch (UGHException | IOException | SwapException e) {
             log.error(e);
         }
+        // open exported file to enhance it
+        try {
+            Document doc = XmlTools.getSAXBuilder().build(tempfolder.toString() + "/export.xml");
+            Element mets = doc.getRootElement();
+        } catch (JDOMException | IOException e) {
+            log.error(e);
+        }
+
 
         // collect data from folders
-
+        Map<Path, List<Path>> allData = process.getAllFolderAndFiles();
+        System.out.println(allData);
         // create checksums + payload + size + creation date for each file in all folders/filegroups
 
-        // open exported file, enhance it
 
         // extract descriptive metadata
 
@@ -202,6 +234,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         // generate zip/tar/whatever
 
         // cleanup temporary files
+
+        //        StorageProvider.getInstance().deleteDir(tempfolder);
 
         return PluginReturnValue.FINISH;
     }

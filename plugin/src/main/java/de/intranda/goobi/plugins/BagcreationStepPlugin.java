@@ -211,6 +211,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             // enhance dmdSecs
             changeDmdSecs(mets, creationDate);
 
+            changeAmdSec(mets, creationDate);
+
             createFileChecksums(files, mets);
 
             // save enhanced file
@@ -238,6 +240,21 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         //        StorageProvider.getInstance().deleteDir(tempfolder);
 
         return PluginReturnValue.FINISH;
+    }
+
+    private void changeAmdSec(Element mets, String creationDate) {
+        // CSIP31 -
+        Element amdSec = mets.getChild("amdSec", metsNamespace);
+        Element digiprovMD = mets.getChild("digiprovMD", metsNamespace);
+        digiprovMD.setAttribute("STATUS", "CURRENT"); // CSIP34
+        digiprovMD.setAttribute("CREATED", creationDate);
+        //TODO generate separate files for content, create link to the file with mdRef // CSIP35 - CSIP44
+
+        Element rightsMD= mets.getChild("rightsMD", metsNamespace);
+        rightsMD.setAttribute("STATUS", "CURRENT"); // CSIP47
+        rightsMD.setAttribute("CREATED", creationDate);
+        //TODO generate separate files for content, create link to the file with mdRef // CSIP48 - CSIP57
+
     }
 
     private void changeDmdSecs(Element mets, String creationDate) {

@@ -120,7 +120,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             group.setFolder(hc.getString("@folder"));
             filegroups.add(group);
         }
-        userAgent = myconfig.getString("/userAgent","");
+        userAgent = myconfig.getString("/userAgent", "");
     }
 
     @Override
@@ -177,7 +177,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 // check if folder exists
                 Path sourceFolder = getSourceFolder(projectFileGroup.getFolder());
 
-                if (sourceFolder!= null && StorageProvider.getInstance().isFileExists(sourceFolder)) {
+                if (sourceFolder != null && StorageProvider.getInstance().isFileExists(sourceFolder)) {
                     files.put(projectFileGroup.getName(), StorageProvider.getInstance().listFiles(sourceFolder.toString()));
                     // generate filegroup
                     VirtualFileGroup virt = new VirtualFileGroup(projectFileGroup.getName(), projectFileGroup.getPath(),
@@ -206,7 +206,10 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             mets.setAttribute("CONTENTINFORMATIONTYPE", "MIXED", csipNamespace); // CSIP4
 
             // enhance existing agent, add additional user agent for submitting agent (SIP4 - SIP 31)
-            createUserAgent(mets);
+            String creationDate = createUserAgent(mets);
+
+            // enhance dmdSecs
+            changeDmdSecs(mets, creationDate);
 
             createFileChecksums(files, mets);
 
@@ -237,11 +240,21 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         return PluginReturnValue.FINISH;
     }
 
-    private void createUserAgent(Element mets) {
-        Element metsHdr = mets.getChild("metsHdr", metsNamespace);
-        metsHdr.setAttribute("OAISPACKAGETYPE","SIP",csipNamespace); // SIP4
-        metsHdr.setAttribute("RECORDSTATUS","NEW"); // SIP3
+    private void changeDmdSecs(Element mets, String creationDate) {
 
+        List<Element> dmdSecs = mets.getChildren("dmdSec", metsNamespace);
+        for (Element  dmdSec :  dmdSecs) {
+            dmdSec.setAttribute("CREATED", creationDate); // CSIP19
+            dmdSec.setAttribute("STATUS", "CURRENT"); // CSIP20
+            //TODO generate separate files for each dmdSec, create link to the file with mdRef // CSIP21 - CSIP30
+        }
+    }
+
+    private String createUserAgent(Element mets) {
+        Element metsHdr = mets.getChild("metsHdr", metsNamespace);
+        metsHdr.setAttribute("OAISPACKAGETYPE", "SIP", csipNamespace); // SIP4
+        metsHdr.setAttribute("RECORDSTATUS", "NEW"); // SIP3
+        String creationDate = metsHdr.getAttributeValue("CREATEDATE");
         Element agent = metsHdr.getChild("agent", metsNamespace);
         Element name = new Element("name", metsNamespace);
         agent.addContent(name);
@@ -254,13 +267,14 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         agent2.setAttribute("ROLE", "CREATOR"); // SIP16
         agent2.setAttribute("TYPE", "ORGANIZATION"); // SIP17
         metsHdr.addContent(agent2);
-        Element name2= new Element("name", metsNamespace);
+        Element name2 = new Element("name", metsNamespace);
         name2.setText(userAgent); // SIP24
         agent2.addContent(name2);
         Element note2 = new Element("note", metsNamespace);
         note2.setAttribute("NOTETYPE", "IDENTIFICATIONCODE", csipNamespace); // SIP20
         note2.setText("1");
         agent2.addContent(note2);
+        return creationDate;
     }
 
     private void createFileChecksums(Map<String, List<Path>> files, Element mets) throws IOException {

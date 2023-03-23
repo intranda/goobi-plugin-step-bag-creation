@@ -12,10 +12,7 @@
         <project>*</project>
         <step>*</step>
 		<group folder="master" fileGrpName="master" prefix="data/" suffix="tif" mimeType="image/tiff" />
-		<group folder="xml" fileGrpName="ocr-alto" prefix="data/" mimeType="text/xml" />
-		<group folder="txt" fileGrpName="ocr-txt" prefix="data/" mimeType="text/xml" />
-		<group folder="pdf" fileGrpName="pdf" prefix="data/" suffix="pdf" mimeType="application/pdf" />
-        
+		<group folder="xml" fileGrpName="ocr-alto" prefix="data/" mimeType="text/xml" />        
         
         <userAgent>WU Wien</userAgent>
     </config>

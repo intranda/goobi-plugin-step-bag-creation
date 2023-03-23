@@ -71,9 +71,10 @@ import ugh.fileformats.mets.MetsModsImportExport;
 @Log4j2
 public class BagcreationStepPlugin extends ExportMets implements IStepPluginVersion2 {
 
-
     private static final Namespace metsNamespace = Namespace.getNamespace("mets", "http://www.loc.gov/METS/");
-    private static final Namespace modsNamespace= Namespace.getNamespace("mods", "http://www.loc.gov/mods/v3");
+    private static final Namespace modsNamespace = Namespace.getNamespace("mods", "http://www.loc.gov/mods/v3");
+    private static final Namespace sipNamespace = Namespace.getNamespace("sip", "https://DILCIS.eu/XML/METS/SIPExtensionMETS");
+    private static final Namespace csipNamespace = Namespace.getNamespace("csip", "https://DILCIS.eu/XML/METS/CSIPExtensionMETS");
 
     private static final long serialVersionUID = 211912948222450125L;
     @Getter
@@ -97,6 +98,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
     private List<ProjectFileGroup> filegroups = new ArrayList<>();
 
+    private String userAgent;
+
     @Override
     public void initialize(Step step, String returnPath) {
         this.returnPath = returnPath;
@@ -117,6 +120,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             group.setFolder(hc.getString("@folder"));
             filegroups.add(group);
         }
+        userAgent = myconfig.getString("/userAgent","");
     }
 
     @Override
@@ -173,18 +177,17 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 // check if folder exists
                 Path sourceFolder = getSourceFolder(projectFileGroup.getFolder());
 
-                if (StorageProvider.getInstance().isFileExists(sourceFolder)) {
+                if (sourceFolder!= null && StorageProvider.getInstance().isFileExists(sourceFolder)) {
                     files.put(projectFileGroup.getName(), StorageProvider.getInstance().listFiles(sourceFolder.toString()));
                     // generate filegroup
-                    VirtualFileGroup virt = new VirtualFileGroup(projectFileGroup.getName(), projectFileGroup.getPath(), projectFileGroup.getMimetype(),
-                            projectFileGroup.getSuffix());
+                    VirtualFileGroup virt = new VirtualFileGroup(projectFileGroup.getName(), projectFileGroup.getPath(),
+                            projectFileGroup.getMimetype(), projectFileGroup.getSuffix());
                     exportFilefoExport.getDigitalDocument().getFileSet().addVirtualFileGroup(virt);
                 }
             }
 
             // project parameter
             setProjectParameter(identifier, vp, exportFilefoExport);
-
 
             // save file
             exportFilefoExport.write(tempfolder.toString() + "/export.xml");
@@ -196,26 +199,18 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             Document doc = XmlTools.getSAXBuilder().build(tempfolder.toString() + "/export.xml");
             Element mets = doc.getRootElement();
 
-            Element fileSec = mets.getChild("fileSec", metsNamespace);
-            for (Element fileGrp : fileSec.getChildren("fileGrp", metsNamespace)) {
-                fileGrp.setAttribute("ID", UUID.randomUUID().toString());
+            mets.addNamespaceDeclaration(sipNamespace);
+            mets.addNamespaceDeclaration(csipNamespace);
+            mets.setAttribute("TYPE", "Mixed"); // CSIP2
+            mets.setAttribute("PROFILE", "https://earkcsip.dilcis.eu/profile/E-ARK-CSIP.xml"); // SIP2
+            mets.setAttribute("CONTENTINFORMATIONTYPE", "MIXED", csipNamespace); // CSIP4
 
+            // enhance existing agent, add additional user agent for submitting agent (SIP4 - SIP 31)
+            createUserAgent(mets);
 
-                String name = fileGrp.getAttributeValue("USE");
-                List<Path> filesInFolder = files.get(name);
-                List<Element> filesInXml = fileGrp.getChildren("file", metsNamespace);
-                for (int i = 0; i < filesInXml.size(); i++) {
-                    Element fileElement = filesInXml.get(i);
-                    Path file = filesInFolder.get(i);
-                    // checksum, filesize, changedate
+            createFileChecksums(files, mets);
 
-                    fileElement.setAttribute("SIZE", ""+   StorageProvider.getInstance().getFileSize(file));
-                    fileElement.setAttribute("CREATED", StorageProvider.getInstance().getFileCreationTime(file));
-                    fileElement.setAttribute("CHECKSUM", StorageProvider.getInstance().createSha256Checksum(file));
-                    fileElement.setAttribute("CHECKSUMTYPE", "SHA-256");
-                }
-            }
-
+            // save enhanced file
             XMLOutputter xmlOut = new XMLOutputter(Format.getPrettyFormat());
             FileOutputStream fos = new FileOutputStream(tempfolder.toString() + "/export.xml");
             xmlOut.output(doc, fos);
@@ -225,11 +220,9 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             log.error(e);
         }
 
-
         // collect data from folders
 
         // create checksums + payload + size + creation date for each file in all folders/filegroups
-
 
         // extract descriptive metadata
 
@@ -242,6 +235,53 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         //        StorageProvider.getInstance().deleteDir(tempfolder);
 
         return PluginReturnValue.FINISH;
+    }
+
+    private void createUserAgent(Element mets) {
+        Element metsHdr = mets.getChild("metsHdr", metsNamespace);
+        metsHdr.setAttribute("OAISPACKAGETYPE","SIP",csipNamespace); // SIP4
+        metsHdr.setAttribute("RECORDSTATUS","NEW"); // SIP3
+
+        Element agent = metsHdr.getChild("agent", metsNamespace);
+        Element name = new Element("name", metsNamespace);
+        agent.addContent(name);
+        name.setText("Goobi"); // CSIP14
+
+        Element note = agent.getChild("note", metsNamespace);
+        note.setAttribute("NOTETYPE", "IDENTIFICATIONCODE"); // SIP14
+
+        Element agent2 = new Element("agent", metsNamespace);
+        agent2.setAttribute("ROLE", "CREATOR"); // SIP16
+        agent2.setAttribute("TYPE", "ORGANIZATION"); // SIP17
+        metsHdr.addContent(agent2);
+        Element name2= new Element("name", metsNamespace);
+        name2.setText(userAgent); // SIP24
+        agent2.addContent(name2);
+        Element note2 = new Element("note", metsNamespace);
+        note2.setAttribute("NOTETYPE", "IDENTIFICATIONCODE", csipNamespace); // SIP20
+        note2.setText("1");
+        agent2.addContent(note2);
+    }
+
+    private void createFileChecksums(Map<String, List<Path>> files, Element mets) throws IOException {
+        Element fileSec = mets.getChild("fileSec", metsNamespace);
+        for (Element fileGrp : fileSec.getChildren("fileGrp", metsNamespace)) {
+            fileGrp.setAttribute("ID", UUID.randomUUID().toString());
+
+            String name = fileGrp.getAttributeValue("USE");
+            List<Path> filesInFolder = files.get(name);
+            List<Element> filesInXml = fileGrp.getChildren("file", metsNamespace);
+            for (int i = 0; i < filesInXml.size(); i++) {
+                Element fileElement = filesInXml.get(i);
+                Path file = filesInFolder.get(i);
+                // checksum, filesize, changedate
+
+                fileElement.setAttribute("SIZE", "" + StorageProvider.getInstance().getFileSize(file));
+                fileElement.setAttribute("CREATED", StorageProvider.getInstance().getFileCreationTime(file));
+                fileElement.setAttribute("CHECKSUM", StorageProvider.getInstance().createSha256Checksum(file));
+                fileElement.setAttribute("CHECKSUMTYPE", "SHA-256");
+            }
+        }
     }
 
     private void setProjectParameter(String identifier, VariableReplacer vp, MetsModsImportExport exportFilefoExport) {

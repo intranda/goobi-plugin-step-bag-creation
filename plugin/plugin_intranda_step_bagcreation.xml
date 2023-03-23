@@ -11,10 +11,10 @@
         <!-- which projects to use for (can be more then one, otherwise use *) -->
         <project>*</project>
         <step>*</step>
-		<group folder="master" fileGrpName="master" prefix="data/" suffix="tif" mimeType="image/tiff" />
-		<group folder="xml" fileGrpName="ocr-alto" prefix="data/" mimeType="text/xml" />
-		<group folder="txt" fileGrpName="ocr-txt" prefix="data/" mimeType="text/xml" />
-		<group folder="pdf" fileGrpName="pdf" prefix="data/" suffix="pdf" mimeType="application/pdf" />
+		<group folder="master" fileGrpName="Representations/master" prefix="data/" suffix="tif" mimeType="image/tiff" />
+		<group folder="xml" fileGrpName="Representations/ocr-alto" prefix="data/" mimeType="text/xml" />
+		<group folder="txt" fileGrpName="Representations/ocr-txt" prefix="data/" mimeType="text/xml" />
+		<group folder="pdf" fileGrpName="Representations/pdf" prefix="data/" suffix="pdf" mimeType="application/pdf" />
         
         
         <userAgent>WU Wien</userAgent>

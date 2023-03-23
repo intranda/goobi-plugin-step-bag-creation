@@ -75,6 +75,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     private static final Namespace modsNamespace = Namespace.getNamespace("mods", "http://www.loc.gov/mods/v3");
     private static final Namespace sipNamespace = Namespace.getNamespace("sip", "https://DILCIS.eu/XML/METS/SIPExtensionMETS");
     private static final Namespace csipNamespace = Namespace.getNamespace("csip", "https://DILCIS.eu/XML/METS/CSIPExtensionMETS");
+    private static final Namespace xlinkNamespace = Namespace.getNamespace("xlink", "http://www.w3.org/1999/xlink");
 
     private static final long serialVersionUID = 211912948222450125L;
     @Getter
@@ -215,6 +216,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
             createFileChecksums(files, mets);
 
+            changeStructMap(mets, identifier);
+
             // save enhanced file
             XMLOutputter xmlOut = new XMLOutputter(Format.getPrettyFormat());
             FileOutputStream fos = new FileOutputStream(tempfolder.toString() + "/export.xml");
@@ -240,6 +243,20 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         //        StorageProvider.getInstance().deleteDir(tempfolder);
 
         return PluginReturnValue.FINISH;
+    }
+
+    private void changeStructMap(Element mets, String identifier) {
+        List<Element> structMaps = mets.getChildren("structMap", metsNamespace);
+        for (Element structMap : structMaps) {
+            if ("PHYSICAL".equals(structMap.getAttributeValue("TYPE"))) {
+                structMap.setAttribute("LABEL", "CSIP"); // CSIP82
+                structMap.setAttribute("ID", UUID.randomUUID().toString()); // CSIP83
+                Element physSequence = structMap.getChild("div", metsNamespace);
+                physSequence.setAttribute("LABEL", identifier);
+                // TODO CSIP85 - CSIP112
+            }
+        }
+
     }
 
     private void changeAmdSec(Element mets, String creationDate) {
@@ -301,6 +318,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
     private void createFileChecksums(Map<String, List<Path>> files, Element mets) throws IOException {
         Element fileSec = mets.getChild("fileSec", metsNamespace);
+        fileSec.setAttribute("ID", UUID.randomUUID().toString()); // CSIP59
+
         for (Element fileGrp : fileSec.getChildren("fileGrp", metsNamespace)) {
             fileGrp.setAttribute("ID", UUID.randomUUID().toString());
 
@@ -312,12 +331,15 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 Path file = filesInFolder.get(i);
                 // checksum, filesize, changedate
 
-                fileElement.setAttribute("SIZE", "" + StorageProvider.getInstance().getFileSize(file));
-                fileElement.setAttribute("CREATED", StorageProvider.getInstance().getFileCreationTime(file));
-                fileElement.setAttribute("CHECKSUM", StorageProvider.getInstance().createSha256Checksum(file));
-                fileElement.setAttribute("CHECKSUMTYPE", "SHA-256");
+                fileElement.setAttribute("SIZE", "" + StorageProvider.getInstance().getFileSize(file)); // CSIP69
+                fileElement.setAttribute("CREATED", StorageProvider.getInstance().getFileCreationTime(file)); // CSIP70
+                fileElement.setAttribute("CHECKSUM", StorageProvider.getInstance().createSha256Checksum(file)); // CSIP71
+                fileElement.setAttribute("CHECKSUMTYPE", "SHA-256"); // CSIP72
+                Element flocat = fileElement.getChild("FLocat", metsNamespace);
+                flocat.setAttribute("type", "simple", xlinkNamespace); // CSIP78
             }
         }
+        // TODO create separate file for each fileGrp, create link to the file with mdRef (CSIP76 - SIP35)
     }
 
     private void setProjectParameter(String identifier, VariableReplacer vp, MetsModsImportExport exportFilefoExport) {

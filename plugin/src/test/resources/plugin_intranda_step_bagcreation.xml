@@ -11,8 +11,8 @@
         <!-- which projects to use for (can be more then one, otherwise use *) -->
         <project>*</project>
         <step>*</step>
-		<group folder="master" fileGrpName="master" prefix="data/" suffix="tif" mimeType="image/tiff" />
-		<group folder="xml" fileGrpName="ocr-alto" prefix="data/" mimeType="text/xml" />        
+		<group folder="master" fileGrpName="Representations/master" prefix="data/" suffix="tif" mimeType="image/tiff" />
+		<group folder="xml" fileGrpName="Representations/ocr-alto" prefix="data/" mimeType="text/xml" />        
         
         <userAgent>WU Wien</userAgent>
     </config>

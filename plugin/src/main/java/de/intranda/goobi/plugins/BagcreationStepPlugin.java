@@ -77,7 +77,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     private static final Namespace sipNamespace = Namespace.getNamespace("sip", "https://DILCIS.eu/XML/METS/SIPExtensionMETS");
     private static final Namespace csipNamespace = Namespace.getNamespace("csip", "https://DILCIS.eu/XML/METS/CSIPExtensionMETS");
     private static final Namespace xlinkNamespace = Namespace.getNamespace("xlink", "http://www.w3.org/1999/xlink");
-
+    private static final Namespace dvNamespace = Namespace.getNamespace("dv", "http://dfg-viewer.de/");
     private static final Namespace xsiNamespace = Namespace.getNamespace("xsi", "http://www.w3.org/2001/XMLSchema-instance");
 
     private static final long serialVersionUID = 211912948222450125L;
@@ -251,13 +251,15 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             String creationDate = createUserAgent(mets);
 
             // enhance dmdSecs
-            changeDmdSecs(mets, creationDate);
+            String dmdIds = changeDmdSecs(mets, creationDate);
 
-            changeAmdSec(mets, creationDate);
+            String amdId = changeAmdSec(mets, creationDate);
 
             createFileChecksums(files, mets);
 
-            changeStructMap(mets, identifier);
+            changeStructMap(mets, identifier, dmdIds, amdId);
+
+            removeStructLinks(mets);
 
             // save enhanced file
             XMLOutputter xmlOut = new XMLOutputter(Format.getPrettyFormat());
@@ -269,61 +271,121 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             log.error(e);
         }
 
-        // collect data from folders
-
-        // create checksums + payload + size + creation date for each file in all folders/filegroups
-
-        // extract descriptive metadata
-
-        // extract physical data, add checksums
-
-        // generate zip/tar/whatever
-
-        // cleanup temporary files
-
-        //        StorageProvider.getInstance().deleteDir(tempfolder);
-
         return PluginReturnValue.FINISH;
     }
 
-    private void changeStructMap(Element mets, String identifier) {
+    private void removeStructLinks(Element mets) {
+        mets.removeChild("structLink", metsNamespace);
+    }
+
+    private void changeStructMap(Element mets, String identifier, String dmdIds, String amdId) {
         List<Element> structMaps = mets.getChildren("structMap", metsNamespace);
         for (Element structMap : structMaps) {
             if ("PHYSICAL".equals(structMap.getAttributeValue("TYPE"))) {
                 structMap.setAttribute("LABEL", "CSIP"); // CSIP82
                 structMap.setAttribute("ID", "uuid-" + UUID.randomUUID().toString()); // CSIP83
-                Element physSequence = structMap.getChild("div", metsNamespace);
+                Element physSequence = structMap.getChild("div", metsNamespace); // CSIP84
                 physSequence.setAttribute("LABEL", identifier);
-                // TODO CSIP85 - CSIP112
+                physSequence.removeAttribute("TYPE");
+
+                physSequence.removeContent();
+
+                Element metadataDiv = new Element("div", metsNamespace); // CSIP88
+                metadataDiv.setAttribute("LABEL", "Metadata"); // CSIP88
+                metadataDiv.setAttribute("ID", "uuid-" + UUID.randomUUID().toString());
+                metadataDiv.setAttribute("DMDID", dmdIds);
+                metadataDiv.setAttribute("ADMID", amdId);
+
+                physSequence.addContent(metadataDiv);
+
+                // create a div lement for each fileGroup
+                Element fileSec = mets.getChild("fileSec", metsNamespace);
+                for (Element fileGrp : fileSec.getChildren()) {
+                    String fileGroupId = fileGrp.getAttributeValue("ID");
+                    String fileGroupLabel = fileGrp.getAttributeValue("USE");
+                    String href = fileGroupLabel.toLowerCase() + "/METS.xml";
+
+                    Element div = new Element("div", metsNamespace);
+                    div.setAttribute("ID", "uuid-" + UUID.randomUUID().toString());
+                    div.setAttribute("LABEL", fileGroupLabel);
+                    physSequence.addContent(div);
+
+                    Element mptr = new Element("mptr", metsNamespace);
+                    mptr.setAttribute("type", "simple", xlinkNamespace);
+                    mptr.setAttribute("href", href, xlinkNamespace);
+                    mptr.setAttribute("title", fileGroupId, xlinkNamespace);
+                    mptr.setAttribute("LOCTYPE", "URL");
+                    div.addContent(mptr);
+                }
             }
         }
-
     }
 
-    private void changeAmdSec(Element mets, String creationDate) {
-        // CSIP31 -
-        Element amdSec = mets.getChild("amdSec", metsNamespace);
+    private String changeAmdSec(Element mets, String creationDate) {
+
+        Element amdSec = mets.getChild("amdSec", metsNamespace); // CSIP31
+        String id = "";
         if (amdSec != null) {
-            Element digiprovMD = mets.getChild("digiprovMD", metsNamespace);
+            id = amdSec.getAttributeValue("ID");
+
+            Element digiprovMD = amdSec.getChild("digiprovMD", metsNamespace);
             if (digiprovMD != null) {
                 digiprovMD.setAttribute("STATUS", "CURRENT"); // CSIP34
                 digiprovMD.setAttribute("CREATED", creationDate);
-                //TODO generate separate files for content, create link to the file with mdRef // CSIP35 - CSIP44
+                // generate separate files for content, create link to the file with mdRef // CSIP35 - CSIP44
+                Element mdWrap = digiprovMD.getChild("mdWrap", metsNamespace);
+                Element xmlData = mdWrap.getChild("xmlData", metsNamespace);
+                Element links = xmlData.getChild("links", dvNamespace);
+                // create deep copy
+                Element copy = links.clone();
+                try {
+                    Element mdRef = createFile(copy, "metadata/other/", "DIGIPROV", "");
+                    mdRef.setAttribute("MDTYPE", "OTHER");
+                    mdRef.setAttribute("OTHERMDTYPE", "DVLINKS");
+
+                    digiprovMD.removeContent(mdWrap);
+                    digiprovMD.addContent(mdRef);
+                } catch (IOException e) {
+                    log.error(e);
+                }
+            }
+
+            Element rightsMD = amdSec.getChild("rightsMD", metsNamespace);
+            if (rightsMD != null) {
+                rightsMD.setAttribute("STATUS", "CURRENT"); // CSIP47
+                rightsMD.setAttribute("CREATED", creationDate);
+
+                // generate separate files for content, create link to the file with mdRef // CSIP48 - CSIP57
+                Element mdWrap = rightsMD.getChild("mdWrap", metsNamespace);
+                Element xmlData = mdWrap.getChild("xmlData", metsNamespace);
+                Element rights = xmlData.getChild("rights", dvNamespace);
+                // create deep copy
+                Element copy = rights.clone();
+                try {
+                    Element mdRef = createFile(copy, "metadata/other/", "DVRIGHTS", "");
+                    mdRef.setAttribute("MDTYPE", "OTHER");
+                    mdRef.setAttribute("OTHERMDTYPE", "DVRIGHTS");
+                    rightsMD.removeContent(mdWrap);
+                    rightsMD.addContent(mdRef);
+                } catch (IOException e) {
+                    log.error(e);
+                }
             }
         }
-
-        Element rightsMD = mets.getChild("rightsMD", metsNamespace);
-        if (rightsMD != null) {
-            rightsMD.setAttribute("STATUS", "CURRENT"); // CSIP47
-            rightsMD.setAttribute("CREATED", creationDate);
-            //TODO generate separate files for content, create link to the file with mdRef // CSIP48 - CSIP57
-        }
+        return id;
     }
 
-    private void changeDmdSecs(Element mets, String creationDate) {
+    private String changeDmdSecs(Element mets, String creationDate) {
+        StringBuilder ids = new StringBuilder();
+
         List<Element> dmdSecs = mets.getChildren("dmdSec", metsNamespace);
         for (Element dmdSec : dmdSecs) {
             String dmdSecId = dmdSec.getAttributeValue("ID");
+            if (ids.length() > 0) {
+                ids.append(" ");
+            }
+            ids.append(dmdSecId);
+
             dmdSec.setAttribute("CREATED", creationDate); // CSIP19
             dmdSec.setAttribute("STATUS", "CURRENT"); // CSIP20
 
@@ -344,6 +406,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 log.error(e);
             }
         }
+        return ids.toString();
     }
 
     private Element createFile(Element root, String subFolder, String filename, String schemaLocation) throws IOException {
@@ -431,7 +494,49 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 flocat.setAttribute("type", "simple", xlinkNamespace); // CSIP78
             }
         }
-        // TODO create separate file for each fileGrp, create link to the file with mdRef (CSIP76 - SIP35)
+
+        // create separate file for each fileGrp, create link to the file with mdRef (CSIP76 - SIP35)
+        for (Element fileGrp : fileSec.getChildren("fileGrp", metsNamespace)) {
+
+            Element clone = fileGrp.clone();
+
+            Element file = createFileGroupFile(clone);
+
+            fileGrp.removeContent();
+            fileGrp.addContent(file);
+        }
+
+    }
+
+    private Element createFileGroupFile(Element root) throws IOException {
+        String name = root.getAttributeValue("USE");
+
+        Document doc = new Document();
+        doc.setRootElement(root);
+        Path fileName = null;
+        fileName = Paths.get(tempfolder.toString(), name.toLowerCase(), "METS.xml");
+        StorageProvider.getInstance().createDirectories(fileName.getParent());
+
+        XMLOutputter xmlOut = new XMLOutputter(Format.getPrettyFormat());
+        FileOutputStream fos = new FileOutputStream(fileName.toString());
+        xmlOut.output(doc, fos);
+        fos.close();
+
+        Element file = new Element("file", metsNamespace);
+
+        file.setAttribute("ID", "uuid-" + UUID.randomUUID().toString());
+        file.setAttribute("MIMETYPE", "text/xml");
+        file.setAttribute("SIZE", "" + StorageProvider.getInstance().getFileSize(fileName));
+        file.setAttribute("CREATED", StorageProvider.getInstance().getFileCreationTime(fileName));
+        file.setAttribute("CHECKSUM", StorageProvider.getInstance().createSha256Checksum(fileName));
+        file.setAttribute("CHECKSUMTYPE", "SHA-256");
+
+        Element flocat = new Element("FLocat", metsNamespace);
+        flocat.setAttribute("type", "simple", xlinkNamespace);
+        flocat.setAttribute("href", name.toLowerCase() + "/METS.xml", xlinkNamespace);
+        flocat.setAttribute("LOCTYPE", "URL");
+        file.addContent(flocat);
+        return file;
     }
 
     private void setProjectParameter(String identifier, VariableReplacer vp, MetsModsImportExport exportFilefoExport) {

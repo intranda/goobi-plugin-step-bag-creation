@@ -67,7 +67,6 @@ public class BagcreationPluginTest {
     private Prefs prefs;
 
     private static final Namespace metsNamespace = Namespace.getNamespace("mets", "http://www.loc.gov/METS/");
-    private static final Namespace modsNamespace = Namespace.getNamespace("mods", "http://www.loc.gov/mods/v3");
 
     @BeforeClass
     public static void setUpClass() throws Exception {
@@ -117,7 +116,6 @@ public class BagcreationPluginTest {
 
         Element fileSec = mets.getChild("fileSec", metsNamespace);
         assertEquals(2, fileSec.getChildren().size());
-
     }
 
     @Before

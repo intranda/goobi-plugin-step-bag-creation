@@ -255,7 +255,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
             String amdId = changeAmdSec(mets, creationDate);
 
-            createFileChecksums(files, mets);
+            changeFileSec(files, mets, creationDate);
 
             changeStructMap(mets, identifier, dmdIds, amdId);
 
@@ -339,7 +339,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 // create deep copy
                 Element copy = links.clone();
                 try {
-                    Element mdRef = createFile(copy, "metadata/other/", "DIGIPROV", "");
+                    Element mdRef = createMetadataFile(copy, "metadata/other/", "DIGIPROV", "");
                     mdRef.setAttribute("MDTYPE", "OTHER");
                     mdRef.setAttribute("OTHERMDTYPE", "DVLINKS");
 
@@ -362,7 +362,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 // create deep copy
                 Element copy = rights.clone();
                 try {
-                    Element mdRef = createFile(copy, "metadata/other/", "DVRIGHTS", "");
+                    Element mdRef = createMetadataFile(copy, "metadata/other/", "DVRIGHTS", "");
                     mdRef.setAttribute("MDTYPE", "OTHER");
                     mdRef.setAttribute("OTHERMDTYPE", "DVRIGHTS");
                     rightsMD.removeContent(mdWrap);
@@ -398,7 +398,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             Element copy = mods.clone();
             try {
                 // create external file, remove content from dmdSec, add file reference to dmdSec,
-                Element mdRef = createFile(copy, "metadata/descriptive/", dmdSecId,
+                Element mdRef = createMetadataFile(copy, "metadata/descriptive/", dmdSecId,
                         "http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-7.xsd");
                 dmdSec.removeContent(mdWrap);
                 dmdSec.addContent(mdRef);
@@ -409,7 +409,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         return ids.toString();
     }
 
-    private Element createFile(Element root, String subFolder, String filename, String schemaLocation) throws IOException {
+    private Element createMetadataFile(Element root, String subFolder, String filename, String schemaLocation) throws IOException {
         if (StringUtils.isNotBlank(schemaLocation)) {
             root.addNamespaceDeclaration(xsiNamespace);
             root.setAttribute("schemaLocation", schemaLocation, xsiNamespace);
@@ -471,7 +471,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         return creationDate;
     }
 
-    private void createFileChecksums(Map<String, List<Path>> files, Element mets) throws IOException {
+    private void changeFileSec(Map<String, List<Path>> files, Element mets, String creationDate) throws IOException {
         Element fileSec = mets.getChild("fileSec", metsNamespace);
         fileSec.setAttribute("ID", "uuid-" + UUID.randomUUID().toString()); // CSIP59
 
@@ -500,7 +500,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
             Element clone = fileGrp.clone();
 
-            Element file = createFileGroupFile(clone);
+            Element file = createFileGroupFile(mets, clone, creationDate);
 
             fileGrp.removeContent();
             fileGrp.addContent(file);
@@ -508,13 +508,58 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
     }
 
-    private Element createFileGroupFile(Element root) throws IOException {
-        String name = root.getAttributeValue("USE");
+    private Element createFileGroupFile(Element oldMets, Element fileGrp, String creationDate) throws IOException {
+        String use = fileGrp.getAttributeValue("USE");
+        fileGrp.setAttribute("USE", "Data"); // replace use value
+        String fileGrpType = use.replace("Representations/", "");
+
+        //  create new mets file
+        Element metsRoot = new Element("mets", metsNamespace);
+        metsRoot.addNamespaceDeclaration(sipNamespace);
+        metsRoot.addNamespaceDeclaration(csipNamespace);
+        metsRoot.addNamespaceDeclaration(xlinkNamespace);
+        metsRoot.addNamespaceDeclaration(xsiNamespace);
+        metsRoot.setAttribute("OBJID", fileGrpType);
+        metsRoot.setAttribute("LABEL", fileGrpType + " copy");
+        metsRoot.setAttribute("TYPE", "Mixed");
+        metsRoot.setAttribute("CONTENTINFORMATIONTYPE", "MIXED", csipNamespace);
+        metsRoot.setAttribute("PROFILE", "https://earkcsip.dilcis.eu/profile/E-ARK-CSIP.xml");
+        metsRoot.setAttribute("schemaLocation",
+                "http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-7.xsd http://www.loc.gov/METS/ http://www.loc.gov/standards/mets/mets.xsd",
+                xsiNamespace);
+        Element metsHdr = new Element("metsHdr", metsNamespace);
+        metsHdr.setAttribute("CREATEDATE", creationDate);
+        metsHdr.setAttribute("LASTMODDATE", creationDate);
+        metsHdr.setAttribute("RECORDSTATUS", "NEW");
+        metsHdr.setAttribute("OAISPACKAGETYPE", "SIP", csipNamespace);
+        metsRoot.addContent(metsHdr);
+        Element fileSec = new Element("fileSec", metsNamespace);
+        fileSec.setAttribute("ID", "uuid-" + UUID.randomUUID().toString());
+        metsRoot.addContent(fileSec);
+        fileSec.addContent(fileGrp);
+
+        // structMap
+
+        List<Element> structMaps = oldMets.getChildren("structMap", metsNamespace);
+        for (Element structMap : structMaps) {
+            if ("PHYSICAL".equals(structMap.getAttributeValue("TYPE"))) {
+                Element physicalStructMap = structMap.clone();
+                metsRoot.addContent(physicalStructMap);
+                // TODO run through file/fptr and remove fptr for other filegroups
+            }
+        }
+
+        // structLink
+        Element structLink = oldMets.getChild("structLink", metsNamespace).clone();
+        for (Element smLink : structLink.getChildren()) {
+            smLink.setAttribute("from", "../../METS.xml#" + smLink.getAttributeValue("from", xlinkNamespace), xlinkNamespace);
+        }
+        metsRoot.addContent(structLink);
 
         Document doc = new Document();
-        doc.setRootElement(root);
+        doc.setRootElement(metsRoot);
         Path fileName = null;
-        fileName = Paths.get(tempfolder.toString(), name.toLowerCase(), "METS.xml");
+        fileName = Paths.get(tempfolder.toString(), use.toLowerCase(), "METS.xml");
         StorageProvider.getInstance().createDirectories(fileName.getParent());
 
         XMLOutputter xmlOut = new XMLOutputter(Format.getPrettyFormat());
@@ -533,7 +578,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
         Element flocat = new Element("FLocat", metsNamespace);
         flocat.setAttribute("type", "simple", xlinkNamespace);
-        flocat.setAttribute("href", name.toLowerCase() + "/METS.xml", xlinkNamespace);
+        flocat.setAttribute("href", use.toLowerCase() + "/METS.xml", xlinkNamespace);
         flocat.setAttribute("LOCTYPE", "URL");
         file.addContent(flocat);
         return file;

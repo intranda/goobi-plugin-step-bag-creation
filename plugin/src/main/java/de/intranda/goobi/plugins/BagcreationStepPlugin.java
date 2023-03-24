@@ -250,7 +250,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         for (Element structMap : structMaps) {
             if ("PHYSICAL".equals(structMap.getAttributeValue("TYPE"))) {
                 structMap.setAttribute("LABEL", "CSIP"); // CSIP82
-                structMap.setAttribute("ID", UUID.randomUUID().toString()); // CSIP83
+                structMap.setAttribute("ID", "uuid-" + UUID.randomUUID().toString()); // CSIP83
                 Element physSequence = structMap.getChild("div", metsNamespace);
                 physSequence.setAttribute("LABEL", identifier);
                 // TODO CSIP85 - CSIP112
@@ -283,9 +283,14 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
         List<Element> dmdSecs = mets.getChildren("dmdSec", metsNamespace);
         for (Element dmdSec : dmdSecs) {
+            String dmdSecId = dmdSec.getAttributeValue("ID");
             dmdSec.setAttribute("CREATED", creationDate); // CSIP19
             dmdSec.setAttribute("STATUS", "CURRENT"); // CSIP20
             //TODO generate separate files for each dmdSec, create link to the file with mdRef // CSIP21 - CSIP30
+            Element mdWrap = dmdSec.getChild("mdWrap", metsNamespace);
+            Element xmlData = mdWrap.getChild("xmlData", metsNamespace);
+            Element mods = xmlData.getChild("mods", modsNamespace);
+
         }
     }
 
@@ -295,12 +300,9 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         metsHdr.setAttribute("RECORDSTATUS", "NEW"); // SIP3
         String creationDate = metsHdr.getAttributeValue("CREATEDATE");
         Element agent = metsHdr.getChild("agent", metsNamespace);
-        Element name = new Element("name", metsNamespace);
-        agent.addContent(name);
-        name.setText("Goobi"); // CSIP14
 
         Element note = agent.getChild("note", metsNamespace);
-        note.setAttribute("NOTETYPE", "IDENTIFICATIONCODE"); // SIP14
+        note.setAttribute("NOTETYPE", "IDENTIFICATIONCODE", csipNamespace); // SIP14
 
         Element agent2 = new Element("agent", metsNamespace);
         agent2.setAttribute("ROLE", "CREATOR"); // SIP16
@@ -318,10 +320,10 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
     private void createFileChecksums(Map<String, List<Path>> files, Element mets) throws IOException {
         Element fileSec = mets.getChild("fileSec", metsNamespace);
-        fileSec.setAttribute("ID", UUID.randomUUID().toString()); // CSIP59
+        fileSec.setAttribute("ID", "uuid-" + UUID.randomUUID().toString()); // CSIP59
 
         for (Element fileGrp : fileSec.getChildren("fileGrp", metsNamespace)) {
-            fileGrp.setAttribute("ID", UUID.randomUUID().toString());
+            fileGrp.setAttribute("ID", "uuid-" + UUID.randomUUID().toString());
 
             String name = fileGrp.getAttributeValue("USE");
             List<Path> filesInFolder = files.get(name);
@@ -343,6 +345,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     }
 
     private void setProjectParameter(String identifier, VariableReplacer vp, MetsModsImportExport exportFilefoExport) {
+        // TODO get values from config
         exportFilefoExport.setRightsOwner(vp.replace(project.getMetsRightsOwner()));
         exportFilefoExport.setRightsOwnerLogo(vp.replace(project.getMetsRightsOwnerLogo()));
         exportFilefoExport.setRightsOwnerSiteURL(vp.replace(project.getMetsRightsOwnerSite()));

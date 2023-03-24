@@ -102,7 +102,29 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
     private List<ProjectFileGroup> filegroups = new ArrayList<>();
 
+    // organisation name
     private String userAgent;
+
+    // rights information
+    private String rightsOwner;
+    private String rightsOwnerLogo;
+    private String rightsOwnerSiteURL;
+    private String rightsOwnerContact;
+    private String metsRightsLicense;
+    private String metsRightsSponsor;
+    private String metsRightsSponsorLogo;
+    private String metsRightsSponsorSiteURL;
+
+    // links to presentation
+    private String digiprovPresentation;
+    private String digiprovPresentationAnchor;
+
+    // links to anchor/child file
+    private String digiprovReference;
+    private String digiprovReferenceAnchor;
+    // urls
+    private String iiifUrl;
+    private String sruUrl;
 
     @Override
     public void initialize(Step step, String returnPath) {
@@ -125,6 +147,22 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             filegroups.add(group);
         }
         userAgent = myconfig.getString("/userAgent", "");
+
+        rightsOwner = myconfig.getString("/rightsOwner", "");
+        rightsOwnerLogo = myconfig.getString("/rightsOwnerLogo", "");
+        rightsOwnerSiteURL = myconfig.getString("/rightsOwnerSiteURL", "");
+        rightsOwnerContact = myconfig.getString("/rightsOwnerContact", "");
+        metsRightsLicense = myconfig.getString("/metsRightsLicense", "");
+        metsRightsSponsor = myconfig.getString("/metsRightsSponsor", "");
+        metsRightsSponsorLogo = myconfig.getString("/metsRightsSponsorLogo", "");
+        metsRightsSponsorSiteURL = myconfig.getString("/metsRightsSponsorSiteURL", "");
+
+        digiprovPresentation = myconfig.getString("/digiprovPresentation", "");
+        digiprovPresentationAnchor = myconfig.getString("/digiprovPresentationAnchor", "");
+        digiprovReference = myconfig.getString("/digiprovReference", "");
+        digiprovReferenceAnchor = myconfig.getString("/digiprovReferenceAnchor", "");
+        iiifUrl = myconfig.getString("/iiifUrl", "");
+        sruUrl = myconfig.getString("/sruUrl", "");
     }
 
     @Override
@@ -194,13 +232,13 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             setProjectParameter(identifier, vp, exportFilefoExport);
 
             // save file
-            exportFilefoExport.write(tempfolder.toString() + "/export.xml");
+            exportFilefoExport.write(tempfolder.toString() + "/METS.xml");
         } catch (UGHException | IOException | SwapException e) {
             log.error(e);
         }
         // open exported file to enhance it
         try {
-            Document doc = XmlTools.getSAXBuilder().build(tempfolder.toString() + "/export.xml");
+            Document doc = XmlTools.getSAXBuilder().build(tempfolder.toString() + "/METS.xml");
             Element mets = doc.getRootElement();
 
             mets.addNamespaceDeclaration(sipNamespace);
@@ -223,7 +261,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
             // save enhanced file
             XMLOutputter xmlOut = new XMLOutputter(Format.getPrettyFormat());
-            FileOutputStream fos = new FileOutputStream(tempfolder.toString() + "/export.xml");
+            FileOutputStream fos = new FileOutputStream(tempfolder.toString() + "/METS.xml");
             xmlOut.output(doc, fos);
             fos.close();
 
@@ -283,7 +321,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     }
 
     private void changeDmdSecs(Element mets, String creationDate) {
-
         List<Element> dmdSecs = mets.getChildren("dmdSec", metsNamespace);
         for (Element dmdSec : dmdSecs) {
             String dmdSecId = dmdSec.getAttributeValue("ID");
@@ -398,25 +435,22 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     }
 
     private void setProjectParameter(String identifier, VariableReplacer vp, MetsModsImportExport exportFilefoExport) {
-        // TODO get values from config
-        exportFilefoExport.setRightsOwner(vp.replace(project.getMetsRightsOwner()));
-        exportFilefoExport.setRightsOwnerLogo(vp.replace(project.getMetsRightsOwnerLogo()));
-        exportFilefoExport.setRightsOwnerSiteURL(vp.replace(project.getMetsRightsOwnerSite()));
-        exportFilefoExport.setRightsOwnerContact(vp.replace(project.getMetsRightsOwnerMail()));
-        exportFilefoExport.setDigiprovPresentation(vp.replace(project.getMetsDigiprovPresentation()));
-        exportFilefoExport.setDigiprovReference(vp.replace(project.getMetsDigiprovReference()));
-        exportFilefoExport.setDigiprovPresentationAnchor(vp.replace(project.getMetsDigiprovPresentationAnchor()));
-        exportFilefoExport.setDigiprovReferenceAnchor(vp.replace(project.getMetsDigiprovReferenceAnchor()));
+        exportFilefoExport.setRightsOwner(vp.replace(rightsOwner));
+        exportFilefoExport.setRightsOwnerLogo(vp.replace(rightsOwnerLogo));
+        exportFilefoExport.setRightsOwnerSiteURL(vp.replace(rightsOwnerSiteURL));
+        exportFilefoExport.setRightsOwnerContact(vp.replace(rightsOwnerContact));
+        exportFilefoExport.setDigiprovPresentation(vp.replace(digiprovPresentation));
+        exportFilefoExport.setDigiprovReference(vp.replace(digiprovReference));
+        exportFilefoExport.setDigiprovPresentationAnchor(vp.replace(digiprovPresentationAnchor));
+        exportFilefoExport.setDigiprovReferenceAnchor(vp.replace(digiprovReferenceAnchor));
 
-        exportFilefoExport.setMetsRightsLicense(vp.replace(project.getMetsRightsLicense()));
-        exportFilefoExport.setMetsRightsSponsor(vp.replace(project.getMetsRightsSponsor()));
-        exportFilefoExport.setMetsRightsSponsorLogo(vp.replace(project.getMetsRightsSponsorLogo()));
-        exportFilefoExport.setMetsRightsSponsorSiteURL(vp.replace(project.getMetsRightsSponsorSiteURL()));
+        exportFilefoExport.setMetsRightsLicense(vp.replace(metsRightsLicense));
+        exportFilefoExport.setMetsRightsSponsor(vp.replace(metsRightsSponsor));
+        exportFilefoExport.setMetsRightsSponsorLogo(vp.replace(metsRightsSponsorLogo));
+        exportFilefoExport.setMetsRightsSponsorSiteURL(vp.replace(metsRightsSponsorSiteURL));
 
-        exportFilefoExport.setIIIFUrl(vp.replace(project.getMetsIIIFUrl()));
-        exportFilefoExport.setSruUrl(vp.replace(project.getMetsSruUrl()));
-        exportFilefoExport.setPurlUrl(vp.replace(project.getMetsPurl()));
-        exportFilefoExport.setContentIDs(vp.replace(project.getMetsContentIDs()));
+        exportFilefoExport.setIIIFUrl(vp.replace(iiifUrl));
+        exportFilefoExport.setSruUrl(vp.replace(sruUrl));
 
         // mets pointer between anchor and volume
         String pointer = project.getMetsPointerPath();
@@ -492,7 +526,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
     @Override
     public HashMap<String, StepReturnValue> validate() {
-        return null;
+        return null; // NOSONAR
     }
 
     @Override

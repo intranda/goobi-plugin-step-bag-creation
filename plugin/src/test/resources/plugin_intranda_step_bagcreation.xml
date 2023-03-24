@@ -15,6 +15,20 @@
 		<group folder="xml" fileGrpName="Representations/ocr-alto" prefix="data/" mimeType="text/xml" />        
         
         <userAgent>WU Wien</userAgent>
+        <rightsOwner>WU Wien</rightsOwner>
+        <rightsOwnerLogo>http://example.com/logo.png</rightsOwnerLogo>
+        <rightsOwnerSiteURL>http://example.com</rightsOwnerSiteURL>
+        <rightsOwnerContact>user@example.com</rightsOwnerContact>
+        <metsRightsLicense>CC0</metsRightsLicense>
+        <metsRightsSponsor>DFG</metsRightsSponsor>
+        <metsRightsSponsorLogo>http://example.com/logo.png</metsRightsSponsorLogo>
+        <metsRightsSponsorSiteURL>http://example.com</metsRightsSponsorSiteURL>
+        <digiprovPresentation>http://example.com/opac?id=$(meta.CatalogIDDigital)</digiprovPresentation>
+        <digiprovPresentationAnchor>http://example.com/opac?id=$(meta.topstruct.CatalogIDDigital)</digiprovPresentationAnchor>
+        <digiprovReference>http://example.com//viewer/ppnresolver?id=$(meta.CatalogIDDigital)</digiprovReference>
+        <digiprovReferenceAnchor>http://example.com//viewer/ppnresolver?id=$(meta.topstruct.CatalogIDDigital)</digiprovReferenceAnchor>
+        <iiifUrl>http://example.com//viewer/iiif</iiifUrl>
+        <sruUrl>http://example.com//viewer/sru</sruUrl>        
     </config>
 
 </config_plugin>

@@ -32,6 +32,7 @@ import java.util.UUID;
 
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
+import org.apache.commons.lang.StringUtils;
 import org.goobi.beans.Process;
 import org.goobi.beans.Project;
 import org.goobi.beans.ProjectFileGroup;
@@ -76,6 +77,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     private static final Namespace sipNamespace = Namespace.getNamespace("sip", "https://DILCIS.eu/XML/METS/SIPExtensionMETS");
     private static final Namespace csipNamespace = Namespace.getNamespace("csip", "https://DILCIS.eu/XML/METS/CSIPExtensionMETS");
     private static final Namespace xlinkNamespace = Namespace.getNamespace("xlink", "http://www.w3.org/1999/xlink");
+
+    private static final Namespace xsiNamespace = Namespace.getNamespace("xsi", "http://www.w3.org/2001/XMLSchema-instance");
 
     private static final long serialVersionUID = 211912948222450125L;
     @Getter
@@ -286,12 +289,62 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             String dmdSecId = dmdSec.getAttributeValue("ID");
             dmdSec.setAttribute("CREATED", creationDate); // CSIP19
             dmdSec.setAttribute("STATUS", "CURRENT"); // CSIP20
-            //TODO generate separate files for each dmdSec, create link to the file with mdRef // CSIP21 - CSIP30
+
+            // get mods element
             Element mdWrap = dmdSec.getChild("mdWrap", metsNamespace);
             Element xmlData = mdWrap.getChild("xmlData", metsNamespace);
             Element mods = xmlData.getChild("mods", modsNamespace);
 
+            // create deep copy
+            Element copy = mods.clone();
+            try {
+                // create external file, remove content from dmdSec, add file reference to dmdSec,
+                Element mdRef = createFile(copy, "metadata/descriptive/", dmdSecId,
+                        "http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-7.xsd");
+                dmdSec.removeContent(mdWrap);
+                dmdSec.addContent(mdRef);
+            } catch (IOException e) {
+                log.error(e);
+            }
         }
+    }
+
+    private Element createFile(Element root, String subFolder, String filename, String schemaLocation) throws IOException {
+        if (StringUtils.isNotBlank(schemaLocation)) {
+            root.addNamespaceDeclaration(xsiNamespace);
+            root.setAttribute("schemaLocation", schemaLocation, xsiNamespace);
+        }
+
+        Document doc = new Document();
+        doc.setRootElement(root);
+        Path fileName = null;
+        if (StringUtils.isNotBlank(subFolder)) {
+            fileName = Paths.get(tempfolder.toString(), subFolder, filename + ".xml");
+            StorageProvider.getInstance().createDirectories(fileName.getParent());
+        } else {
+            fileName = Paths.get(tempfolder.toString(), filename + ".xml");
+        }
+
+        XMLOutputter xmlOut = new XMLOutputter(Format.getPrettyFormat());
+        FileOutputStream fos = new FileOutputStream(fileName.toString());
+        xmlOut.output(doc, fos);
+        fos.close();
+
+        Element mdRef = new Element("mdRef", metsNamespace);
+        mdRef.setAttribute("ID", "uuid-" + UUID.randomUUID().toString());
+        mdRef.setAttribute("LOCTYPE", "URL");
+        mdRef.setAttribute("MDTYPE", "MODS");
+        mdRef.setAttribute("MIMETYPE", "text/xml");
+        mdRef.setAttribute("CHECKSUMTYPE", "SHA-256");
+        mdRef.setAttribute("type", "simple", xlinkNamespace);
+        mdRef.setAttribute("href", subFolder + filename + "xml", xlinkNamespace);
+
+        mdRef.setAttribute("SIZE", "" + StorageProvider.getInstance().getFileSize(fileName));
+        mdRef.setAttribute("CREATED", StorageProvider.getInstance().getFileCreationTime(fileName));
+        mdRef.setAttribute("CHECKSUM", StorageProvider.getInstance().createSha256Checksum(fileName));
+
+        return mdRef;
+
     }
 
     private String createUserAgent(Element mets) {

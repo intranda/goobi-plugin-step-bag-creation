@@ -37,6 +37,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 import de.sub.goobi.config.ConfigurationHelper;
 import de.sub.goobi.helper.JwtHelper;
+import de.sub.goobi.helper.StorageProvider;
 import de.sub.goobi.helper.VariableReplacer;
 import de.sub.goobi.helper.XmlTools;
 import de.sub.goobi.helper.enums.StepStatus;
@@ -49,7 +50,7 @@ import ugh.fileformats.mets.MetsMods;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ MetadatenHelper.class, VariableReplacer.class, ConfigurationHelper.class, ProcessManager.class, MetadataManager.class,
-    JwtHelper.class })
+        JwtHelper.class })
 
 @PowerMockIgnore({ "javax.management.*", "javax.xml.*", "org.xml.*", "org.w3c.*", "javax.net.ssl.*", "jdk.internal.reflect.*" })
 public class BagcreationPluginTest {
@@ -109,9 +110,10 @@ public class BagcreationPluginTest {
         Document doc = XmlTools.getSAXBuilder().build(metsfile);
         Element mets = doc.getRootElement();
         assertEquals("10.33510/nls.js.1511270477762", mets.getAttributeValue("OBJID"));
-        Element dmdSec = mets.getChild("dmdSec", metsNamespace);
-        Element mods = dmdSec.getChild("mdWrap", metsNamespace).getChild("xmlData", metsNamespace).getChild("mods", modsNamespace);
-        assertEquals("Main title volume", mods.getChild("titleInfo", modsNamespace).getChild("title", modsNamespace).getText());
+
+        Path descriptiveMetadataFolder = Paths.get(plugin.getTempfolder().toString(), "metadata/descriptive");
+        // created 4 files for DMDLOG_0001 to DMDLOG_0001
+        assertEquals(4, StorageProvider.getInstance().listFiles(descriptiveMetadataFolder.toString()).size());
 
         Element fileSec = mets.getChild("fileSec", metsNamespace);
         assertEquals(2, fileSec.getChildren().size());
@@ -185,8 +187,8 @@ public class BagcreationPluginTest {
         EasyMock.expect(MetadatenHelper.getMetaFileType(EasyMock.anyString())).andReturn("mets").anyTimes();
         EasyMock.expect(MetadatenHelper.getFileformatByName(EasyMock.anyString(), EasyMock.anyObject())).andReturn(ff).anyTimes();
         EasyMock.expect(MetadatenHelper.getMetadataOfFileformat(EasyMock.anyObject(), EasyMock.anyBoolean()))
-        .andReturn(Collections.emptyMap())
-        .anyTimes();
+                .andReturn(Collections.emptyMap())
+                .anyTimes();
         PowerMock.replay(MetadatenHelper.class);
 
         PowerMock.mockStatic(MetadataManager.class);

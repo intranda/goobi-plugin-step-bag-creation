@@ -274,6 +274,19 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         return PluginReturnValue.FINISH;
     }
 
+    private void createFolderStructure(String doi) {
+        // root folder, doi.bag
+        // bag-info.txt
+        // bagit.txt
+        // manifest-sha256.txt
+        // tagmanifest-sha256.txt
+        // data/{doi}/ > main mets
+        // data/{doi}/metadata/descriptive/ -> mods
+        // data/{doi}/metadata/other/ -> rights
+        // data/{doi}/representations/{format}/ -> mets.xml
+        // data/{doi}/representations/{format}/data/ -> files
+    }
+
     private void removeStructLinks(Element mets) {
         mets.removeChild("structLink", metsNamespace);
     }
@@ -552,39 +565,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         List<Element> structMaps = oldMets.getChildren("structMap", metsNamespace);
         for (Element structMap : structMaps) {
             if ("PHYSICAL".equals(structMap.getAttributeValue("TYPE"))) {
-                Element physSequence = structMap.getChild("div", metsNamespace).clone();
-
-                Element physicalStructMap = new Element("structMap", metsNamespace);
-                physicalStructMap.setAttribute("ID", "uuid-" + UUID.randomUUID().toString());
-                physicalStructMap.setAttribute("TYPE", "PHYSICAL");
-                physicalStructMap.setAttribute("LABEL", "CSIP");
-                metsRoot.addContent(physicalStructMap);
-
-                Element div = new Element("div", metsNamespace);
-                div.setAttribute("ID", "uuid-" + UUID.randomUUID().toString());
-                div.setAttribute("TYPE", "OTHER");
-                div.setAttribute("LABEL", fileGrpType);
-                physicalStructMap.addContent(div);
-
-                physSequence.setAttribute("LABEL", "Data");
-
-                div.addContent(physSequence);
-
-                // run through fptr and remove fptr for other filegroups
-                List<Element> fptrRemoveList = new ArrayList<>();
-                for (Element page : physSequence.getChildren("div", metsNamespace)) {
-                    for (Element fptr : page.getChildren("fptr", metsNamespace)) {
-                        String fptrId = fptr.getAttributeValue("FILEID");
-                        if (!fileIdentifier.contains(fptrId)) {
-                            fptrRemoveList.add(fptr);
-                        } else if (!fptrId.startsWith("uuid")) {
-                            fptr.setAttribute("FILEID", "uuid-" + fptrId);
-                        }
-                    }
-                }
-                for (Element fptr : fptrRemoveList) {
-                    fptr.getParent().removeContent(fptr);
-                }
+                createPhysicalStructMap(fileGrpType, fileIdentifier, metsRoot, structMap);
             }
 
         }
@@ -622,6 +603,42 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         flocat.setAttribute("LOCTYPE", "URL");
         file.addContent(flocat);
         return file;
+    }
+
+    private void createPhysicalStructMap(String fileGrpType, List<String> fileIdentifier, Element metsRoot, Element structMap) {
+        Element physSequence = structMap.getChild("div", metsNamespace).clone();
+
+        Element physicalStructMap = new Element("structMap", metsNamespace);
+        physicalStructMap.setAttribute("ID", "uuid-" + UUID.randomUUID().toString());
+        physicalStructMap.setAttribute("TYPE", "PHYSICAL");
+        physicalStructMap.setAttribute("LABEL", "CSIP");
+        metsRoot.addContent(physicalStructMap);
+
+        Element div = new Element("div", metsNamespace);
+        div.setAttribute("ID", "uuid-" + UUID.randomUUID().toString());
+        div.setAttribute("TYPE", "OTHER");
+        div.setAttribute("LABEL", fileGrpType);
+        physicalStructMap.addContent(div);
+
+        physSequence.setAttribute("LABEL", "Data");
+
+        div.addContent(physSequence);
+
+        // run through fptr and remove fptr for other filegroups
+        List<Element> fptrRemoveList = new ArrayList<>();
+        for (Element page : physSequence.getChildren("div", metsNamespace)) {
+            for (Element fptr : page.getChildren("fptr", metsNamespace)) {
+                String fptrId = fptr.getAttributeValue("FILEID");
+                if (!fileIdentifier.contains(fptrId)) {
+                    fptrRemoveList.add(fptr);
+                } else if (!fptrId.startsWith("uuid")) {
+                    fptr.setAttribute("FILEID", "uuid-" + fptrId);
+                }
+            }
+        }
+        for (Element fptr : fptrRemoveList) {
+            fptr.getParent().removeContent(fptr);
+        }
     }
 
     private void setProjectParameter(String identifier, VariableReplacer vp, MetsModsImportExport exportFilefoExport) {

@@ -513,6 +513,15 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         fileGrp.setAttribute("USE", "Data"); // replace use value
         String fileGrpType = use.replace("Representations/", "");
 
+        List<String> fileIdentifier = new ArrayList<>();
+        for (Element file : fileGrp.getChildren("file", metsNamespace)) {
+            String fileId = file.getAttributeValue("ID");
+            fileIdentifier.add(fileId);
+            if (!fileId.startsWith("uuid")) {
+                file.setAttribute("ID", "uuid-" + fileId);
+            }
+        }
+
         //  create new mets file
         Element metsRoot = new Element("mets", metsNamespace);
         metsRoot.addNamespaceDeclaration(sipNamespace);
@@ -543,10 +552,41 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         List<Element> structMaps = oldMets.getChildren("structMap", metsNamespace);
         for (Element structMap : structMaps) {
             if ("PHYSICAL".equals(structMap.getAttributeValue("TYPE"))) {
-                Element physicalStructMap = structMap.clone();
+                Element physSequence = structMap.getChild("div", metsNamespace).clone();
+
+                Element physicalStructMap = new Element("structMap", metsNamespace);
+                physicalStructMap.setAttribute("ID", "uuid-" + UUID.randomUUID().toString());
+                physicalStructMap.setAttribute("TYPE", "PHYSICAL");
+                physicalStructMap.setAttribute("LABEL", "CSIP");
                 metsRoot.addContent(physicalStructMap);
-                // TODO run through file/fptr and remove fptr for other filegroups
+
+                Element div = new Element("div", metsNamespace);
+                div.setAttribute("ID", "uuid-" + UUID.randomUUID().toString());
+                div.setAttribute("TYPE", "OTHER");
+                div.setAttribute("LABEL", fileGrpType);
+                physicalStructMap.addContent(div);
+
+                physSequence.setAttribute("LABEL", "Data");
+
+                div.addContent(physSequence);
+
+                // run through fptr and remove fptr for other filegroups
+                List<Element> fptrRemoveList = new ArrayList<>();
+                for (Element page : physSequence.getChildren("div", metsNamespace)) {
+                    for (Element fptr : page.getChildren("fptr", metsNamespace)) {
+                        String fptrId = fptr.getAttributeValue("FILEID");
+                        if (!fileIdentifier.contains(fptrId)) {
+                            fptrRemoveList.add(fptr);
+                        } else if (!fptrId.startsWith("uuid")) {
+                            fptr.setAttribute("FILEID", "uuid-" + fptrId);
+                        }
+                    }
+                }
+                for (Element fptr : fptrRemoveList) {
+                    fptr.getParent().removeContent(fptr);
+                }
             }
+
         }
 
         // structLink

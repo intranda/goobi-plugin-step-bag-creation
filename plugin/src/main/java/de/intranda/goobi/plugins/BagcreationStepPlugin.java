@@ -98,9 +98,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     private String returnPath;
 
     @Getter
-    private transient Path rootfolder;
-
-    @Getter
     private transient BagCreation bag;
 
     private List<ProjectFileGroup> filegroups = new ArrayList<>();
@@ -129,6 +126,13 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     private String iiifUrl;
     private String sruUrl;
 
+    // manifestation metadata
+    private String organizationName;
+    private String organizationAddress;
+    private String contactName;
+    private String contactEmail;
+    private String softwareName;
+
     @Override
     public void initialize(Step step, String returnPath) {
         this.returnPath = returnPath;
@@ -139,7 +143,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
         // read parameters from correct block in configuration file
         SubnodeConfiguration myconfig = ConfigPlugins.getProjectAndStepConfig(title, step);
-        List<HierarchicalConfiguration> grps = myconfig.configurationsAt("/group");
+        List<HierarchicalConfiguration> grps = myconfig.configurationsAt("/filegroups/group");
         for (HierarchicalConfiguration hc : grps) {
             ProjectFileGroup group = new ProjectFileGroup();
             group.setName(hc.getString("@fileGrpName"));
@@ -151,21 +155,28 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         }
         userAgent = myconfig.getString("/userAgent", "");
 
-        rightsOwner = myconfig.getString("/rightsOwner", "");
-        rightsOwnerLogo = myconfig.getString("/rightsOwnerLogo", "");
-        rightsOwnerSiteURL = myconfig.getString("/rightsOwnerSiteURL", "");
-        rightsOwnerContact = myconfig.getString("/rightsOwnerContact", "");
-        metsRightsLicense = myconfig.getString("/metsRightsLicense", "");
-        metsRightsSponsor = myconfig.getString("/metsRightsSponsor", "");
-        metsRightsSponsorLogo = myconfig.getString("/metsRightsSponsorLogo", "");
-        metsRightsSponsorSiteURL = myconfig.getString("/metsRightsSponsorSiteURL", "");
+        rightsOwner = myconfig.getString("/metsParameter/rightsOwner", "");
+        rightsOwnerLogo = myconfig.getString("/metsParameter/rightsOwnerLogo", "");
+        rightsOwnerSiteURL = myconfig.getString("/metsParameter/rightsOwnerSiteURL", "");
+        rightsOwnerContact = myconfig.getString("/metsParameter/rightsOwnerContact", "");
+        metsRightsLicense = myconfig.getString("/metsParameter/metsRightsLicense", "");
+        metsRightsSponsor = myconfig.getString("/metsParameter/metsRightsSponsor", "");
+        metsRightsSponsorLogo = myconfig.getString("/metsParameter/metsRightsSponsorLogo", "");
+        metsRightsSponsorSiteURL = myconfig.getString("/metsParameter/metsRightsSponsorSiteURL", "");
 
-        digiprovPresentation = myconfig.getString("/digiprovPresentation", "");
-        digiprovPresentationAnchor = myconfig.getString("/digiprovPresentationAnchor", "");
-        digiprovReference = myconfig.getString("/digiprovReference", "");
-        digiprovReferenceAnchor = myconfig.getString("/digiprovReferenceAnchor", "");
-        iiifUrl = myconfig.getString("/iiifUrl", "");
-        sruUrl = myconfig.getString("/sruUrl", "");
+        digiprovPresentation = myconfig.getString("/metsParameter/digiprovPresentation", "");
+        digiprovPresentationAnchor = myconfig.getString("/metsParameter/digiprovPresentationAnchor", "");
+        digiprovReference = myconfig.getString("/metsParameter/digiprovReference", "");
+        digiprovReferenceAnchor = myconfig.getString("/metsParameter/digiprovReferenceAnchor", "");
+        iiifUrl = myconfig.getString("/metsParameter/iiifUrl", "");
+        sruUrl = myconfig.getString("/metsParameter/sruUrl", "");
+
+        organizationName = myconfig.getString("/submissionParameter/organizationName", "");
+        organizationAddress = myconfig.getString("/submissionParameter/organizationAddress", "");
+        contactName = myconfig.getString("/submissionParameter/contactName", "");
+        contactEmail = myconfig.getString("/submissionParameter/contactEmail", "");
+        softwareName = myconfig.getString("/submissionParameter/softwareName", "");
+
     }
 
     @Override
@@ -189,16 +200,15 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                     break;
                 }
             }
-
-            bag = new BagCreation(identifier.replace("/", "_"));
-            bag.createIEFolder(identifier.replace("/", "_"), "representations");
-
-            rootfolder = bag.getBagitRoot();
-
             if (identifier == null) {
                 // no doi found, cancel export
                 return PluginReturnValue.ERROR;
             }
+
+            bag = new BagCreation(identifier.replace("/", "_"));
+            bag.createIEFolder(identifier.replace("/", "_"), "representations");
+
+
             vp = new VariableReplacer(fileformat.getDigitalDocument(), prefs, process, null);
             // create export file
 
@@ -268,6 +278,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             xmlOut.output(doc, fos);
             fos.close();
 
+            createBag();
+
         } catch (JDOMException | IOException e) {
             log.error(e);
         }
@@ -275,26 +287,20 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         return PluginReturnValue.FINISH;
     }
 
-    private void createFolderStructure(String doi) {
-        // root folder, doi.bag
-        // bag-info.txt
-        // bagit.txt
-        // manifest-sha256.txt
-        // tagmanifest-sha256.txt
-        // data/{doi}/ > main mets
-        // data/{doi}/metadata/descriptive/ -> mods
-        // data/{doi}/metadata/other/ -> rights
-        // data/{doi}/representations/{format}/ -> mets.xml
-        // data/{doi}/representations/{format}/data/ -> files
+    private void createBag() {
+        bag.addMetadata("Source-Organization", organizationName);
+        bag.addMetadata("Organization-Address", organizationAddress);
+        bag.addMetadata("Contact-Name", contactName);
+        bag.addMetadata("Contact-Email", contactEmail);
+        bag.addMetadata("Bagging-Software", softwareName);
 
-        //        ◦ Source-Organization
-        //        ◦ Organization-Address
-        //        ◦ Contact-Name
-        //        ◦ Contact-Email
-        //        ◦ Bagging-Software
-        //        ◦ Bagging-Date
-        //        ◦ Bag-Size
-        //        ◦ Payload-Oxum
+        try {
+            // TODO
+            bag.addMetadata("Bag-Size", ""+ StorageProvider.getInstance().getDirectorySize(bag.getIeFolder()) );
+        } catch (IOException e) {
+            log.error(e);
+        }
+        bag.createBag();
     }
 
     private void removeStructLinks(Element mets) {

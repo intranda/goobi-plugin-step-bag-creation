@@ -102,6 +102,7 @@ public class BagcreationPluginTest {
         plugin.initialize(step, "something");
         PluginReturnValue answer = plugin.run();
         assertEquals(PluginReturnValue.FINISH, answer);
+
         String metsfile = plugin.getBag().getIeFolder().toString() + "/METS.xml";
 
         assertTrue(Files.exists(Paths.get(metsfile)));

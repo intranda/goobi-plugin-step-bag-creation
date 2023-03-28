@@ -11,24 +11,37 @@
         <!-- which projects to use for (can be more then one, otherwise use *) -->
         <project>*</project>
         <step>*</step>
-		<group folder="master" fileGrpName="Representations/master" prefix="data/" suffix="tif" mimeType="image/tiff" />
-		<group folder="xml" fileGrpName="Representations/ocr-alto" prefix="data/" mimeType="text/xml" />        
+         <filegroups>
+    		<group folder="master" fileGrpName="Representations/master" prefix="data/" suffix="tif" mimeType="image/tiff" />
+    		<group folder="xml" fileGrpName="Representations/ocr-alto" prefix="data/" mimeType="text/xml" />        
+        </filegroups>
         
-        <userAgent>WU Wien</userAgent>
-        <rightsOwner>WU Wien</rightsOwner>
-        <rightsOwnerLogo>http://example.com/logo.png</rightsOwnerLogo>
-        <rightsOwnerSiteURL>http://example.com</rightsOwnerSiteURL>
-        <rightsOwnerContact>user@example.com</rightsOwnerContact>
-        <metsRightsLicense>CC0</metsRightsLicense>
-        <metsRightsSponsor>DFG</metsRightsSponsor>
-        <metsRightsSponsorLogo>http://example.com/logo.png</metsRightsSponsorLogo>
-        <metsRightsSponsorSiteURL>http://example.com</metsRightsSponsorSiteURL>
-        <digiprovPresentation>http://example.com/opac?id=$(meta.CatalogIDDigital)</digiprovPresentation>
-        <digiprovPresentationAnchor>http://example.com/opac?id=$(meta.topstruct.CatalogIDDigital)</digiprovPresentationAnchor>
-        <digiprovReference>http://example.com//viewer/ppnresolver?id=$(meta.CatalogIDDigital)</digiprovReference>
-        <digiprovReferenceAnchor>http://example.com//viewer/ppnresolver?id=$(meta.topstruct.CatalogIDDigital)</digiprovReferenceAnchor>
-        <iiifUrl>http://example.com//viewer/iiif</iiifUrl>
-        <sruUrl>http://example.com//viewer/sru</sruUrl>        
+        <metsParameter>
+            <userAgent>WU Wien</userAgent>
+            <rightsOwner>WU Wien</rightsOwner>
+            <rightsOwnerLogo>http://example.com/logo.png</rightsOwnerLogo>
+            <rightsOwnerSiteURL>http://example.com</rightsOwnerSiteURL>
+            <rightsOwnerContact>user@example.com</rightsOwnerContact>
+            <metsRightsLicense>CC0</metsRightsLicense>
+            <metsRightsSponsor>DFG</metsRightsSponsor>
+            <metsRightsSponsorLogo>http://example.com/logo.png</metsRightsSponsorLogo>
+            <metsRightsSponsorSiteURL>http://example.com</metsRightsSponsorSiteURL>
+            <digiprovPresentation>http://example.com/opac?id=$(meta.CatalogIDDigital)</digiprovPresentation>
+            <digiprovPresentationAnchor>http://example.com/opac?id=$(meta.topstruct.CatalogIDDigital)</digiprovPresentationAnchor>
+            <digiprovReference>http://example.com//viewer/ppnresolver?id=$(meta.CatalogIDDigital)</digiprovReference>
+            <digiprovReferenceAnchor>http://example.com//viewer/ppnresolver?id=$(meta.topstruct.CatalogIDDigital)</digiprovReferenceAnchor>
+            <iiifUrl>http://example.com//viewer/iiif</iiifUrl>
+            <sruUrl>http://example.com//viewer/sru</sruUrl>    
+        </metsParameter>
+
+        <submissionParameter>
+            <organizationName>Source-Organization</organizationName>
+            <organizationAddress>Organization-Address</organizationAddress>
+            <contactName>Contact-Name</contactName>
+            <contactEmail>Contact-Email</contactEmail>
+            <softwareName>Goobi</softwareName>       
+        </submissionParameter>
+
     </config>
 
 </config_plugin>

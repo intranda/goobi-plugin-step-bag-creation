@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
 
 import org.apache.commons.configuration.HierarchicalConfiguration;
@@ -50,6 +51,7 @@ import org.jdom2.output.Format;
 import org.jdom2.output.XMLOutputter;
 
 import de.sub.goobi.config.ConfigPlugins;
+import de.sub.goobi.config.ConfigurationHelper;
 import de.sub.goobi.export.download.ExportMets;
 import de.sub.goobi.helper.BagCreation;
 import de.sub.goobi.helper.StorageProvider;
@@ -205,9 +207,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 return PluginReturnValue.ERROR;
             }
 
-            bag = new BagCreation(identifier.replace("/", "_"));
+            bag = new BagCreation(ConfigurationHelper.getInstance().getTemporaryFolder() + "/" + identifier.replace("/", "_"));
             bag.createIEFolder(identifier.replace("/", "_"), "representations");
-
 
             vp = new VariableReplacer(fileformat.getDigitalDocument(), prefs, process, null);
             // create export file
@@ -293,10 +294,9 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         bag.addMetadata("Contact-Name", contactName);
         bag.addMetadata("Contact-Email", contactEmail);
         bag.addMetadata("Bagging-Software", softwareName);
-
+        // TODO add success/return url
         try {
-            // TODO
-            bag.addMetadata("Bag-Size", ""+ StorageProvider.getInstance().getDirectorySize(bag.getIeFolder()) );
+            bag.addMetadata("Bag-Size", "" + StorageProvider.getInstance().getDirectorySize(bag.getIeFolder()));
         } catch (IOException e) {
             log.error(e);
         }
@@ -533,6 +533,17 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
             fileGrp.removeContent();
             fileGrp.addContent(file);
+        }
+
+        // copy files
+        for (Entry<String, List<Path>> entry : files.entrySet()) {
+
+            String folderName = entry.getKey().replace("Representations/", "");
+            Path sourceFolder = entry.getValue().get(0).getParent();
+
+            Path destinationFolder = Paths.get(bag.getObjectsFolder().toString(), folderName, "data");
+            StorageProvider.getInstance().createDirectories(destinationFolder);
+            StorageProvider.getInstance().copyDirectory(sourceFolder, destinationFolder);
         }
 
     }

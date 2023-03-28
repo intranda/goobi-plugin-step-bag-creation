@@ -50,8 +50,8 @@ import org.jdom2.output.Format;
 import org.jdom2.output.XMLOutputter;
 
 import de.sub.goobi.config.ConfigPlugins;
-import de.sub.goobi.config.ConfigurationHelper;
 import de.sub.goobi.export.download.ExportMets;
+import de.sub.goobi.helper.BagCreation;
 import de.sub.goobi.helper.StorageProvider;
 import de.sub.goobi.helper.VariableReplacer;
 import de.sub.goobi.helper.XmlTools;
@@ -98,7 +98,10 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     private String returnPath;
 
     @Getter
-    private transient Path tempfolder;
+    private transient Path rootfolder;
+
+    @Getter
+    private transient BagCreation bag;
 
     private List<ProjectFileGroup> filegroups = new ArrayList<>();
 
@@ -169,16 +172,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     public PluginReturnValue run() {
         String identifier = null;
         VariableReplacer vp = null;
-
-        tempfolder = Paths.get(ConfigurationHelper.getInstance().getTemporaryFolder(), UUID.randomUUID().toString());
-
-        try {
-            StorageProvider.getInstance().createDirectories(tempfolder);
-        } catch (IOException e) {
-            log.error(e);
-            return PluginReturnValue.ERROR;
-        }
         Map<String, List<Path>> files = new HashMap<>();
+
         try {
             // read metadata
             Fileformat fileformat = process.readMetadataFile();
@@ -194,6 +189,12 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                     break;
                 }
             }
+
+            bag = new BagCreation(identifier.replace("/", "_"));
+            bag.createIEFolder(identifier.replace("/", "_"), "representations");
+
+            rootfolder = bag.getBagitRoot();
+
             if (identifier == null) {
                 // no doi found, cancel export
                 return PluginReturnValue.ERROR;
@@ -232,13 +233,13 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             setProjectParameter(identifier, vp, exportFilefoExport);
 
             // save file
-            exportFilefoExport.write(tempfolder.toString() + "/METS.xml");
+            exportFilefoExport.write(bag.getIeFolder().toString() + "/METS.xml");
         } catch (UGHException | IOException | SwapException e) {
             log.error(e);
         }
         // open exported file to enhance it
         try {
-            Document doc = XmlTools.getSAXBuilder().build(tempfolder.toString() + "/METS.xml");
+            Document doc = XmlTools.getSAXBuilder().build(bag.getIeFolder().toString() + "/METS.xml");
             Element mets = doc.getRootElement();
 
             mets.addNamespaceDeclaration(sipNamespace);
@@ -263,7 +264,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
             // save enhanced file
             XMLOutputter xmlOut = new XMLOutputter(Format.getPrettyFormat());
-            FileOutputStream fos = new FileOutputStream(tempfolder.toString() + "/METS.xml");
+            FileOutputStream fos = new FileOutputStream(bag.getIeFolder() + "/METS.xml");
             xmlOut.output(doc, fos);
             fos.close();
 
@@ -285,6 +286,15 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         // data/{doi}/metadata/other/ -> rights
         // data/{doi}/representations/{format}/ -> mets.xml
         // data/{doi}/representations/{format}/data/ -> files
+
+        //        ◦ Source-Organization
+        //        ◦ Organization-Address
+        //        ◦ Contact-Name
+        //        ◦ Contact-Email
+        //        ◦ Bagging-Software
+        //        ◦ Bagging-Date
+        //        ◦ Bag-Size
+        //        ◦ Payload-Oxum
     }
 
     private void removeStructLinks(Element mets) {
@@ -352,7 +362,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 // create deep copy
                 Element copy = links.clone();
                 try {
-                    Element mdRef = createMetadataFile(copy, "metadata/other/", "DIGIPROV", "");
+                    Element mdRef = createMetadataFile(copy, "other/", "DIGIPROV", "");
                     mdRef.setAttribute("MDTYPE", "OTHER");
                     mdRef.setAttribute("OTHERMDTYPE", "DVLINKS");
 
@@ -375,7 +385,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 // create deep copy
                 Element copy = rights.clone();
                 try {
-                    Element mdRef = createMetadataFile(copy, "metadata/other/", "DVRIGHTS", "");
+                    Element mdRef = createMetadataFile(copy, "other", "DVRIGHTS", "");
                     mdRef.setAttribute("MDTYPE", "OTHER");
                     mdRef.setAttribute("OTHERMDTYPE", "DVRIGHTS");
                     rightsMD.removeContent(mdWrap);
@@ -411,7 +421,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             Element copy = mods.clone();
             try {
                 // create external file, remove content from dmdSec, add file reference to dmdSec,
-                Element mdRef = createMetadataFile(copy, "metadata/descriptive/", dmdSecId,
+                Element mdRef = createMetadataFile(copy, "descriptive/", dmdSecId,
                         "http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-7.xsd");
                 dmdSec.removeContent(mdWrap);
                 dmdSec.addContent(mdRef);
@@ -432,10 +442,10 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         doc.setRootElement(root);
         Path fileName = null;
         if (StringUtils.isNotBlank(subFolder)) {
-            fileName = Paths.get(tempfolder.toString(), subFolder, filename + ".xml");
+            fileName = Paths.get(bag.getMetadataFolder().toString(), subFolder, filename + ".xml");
             StorageProvider.getInstance().createDirectories(fileName.getParent());
         } else {
-            fileName = Paths.get(tempfolder.toString(), filename + ".xml");
+            fileName = Paths.get(bag.getMetadataFolder().toString(), filename + ".xml");
         }
 
         XMLOutputter xmlOut = new XMLOutputter(Format.getPrettyFormat());
@@ -580,7 +590,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         Document doc = new Document();
         doc.setRootElement(metsRoot);
         Path fileName = null;
-        fileName = Paths.get(tempfolder.toString(), use.toLowerCase(), "METS.xml");
+        fileName = Paths.get(bag.getObjectsFolder().toString(), fileGrpType, "METS.xml");
         StorageProvider.getInstance().createDirectories(fileName.getParent());
 
         XMLOutputter xmlOut = new XMLOutputter(Format.getPrettyFormat());

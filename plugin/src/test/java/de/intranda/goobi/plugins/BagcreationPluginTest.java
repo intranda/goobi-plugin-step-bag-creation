@@ -50,7 +50,7 @@ import ugh.fileformats.mets.MetsMods;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ MetadatenHelper.class, VariableReplacer.class, ConfigurationHelper.class, ProcessManager.class, MetadataManager.class,
-        JwtHelper.class })
+    JwtHelper.class })
 
 @PowerMockIgnore({ "javax.management.*", "javax.xml.*", "org.xml.*", "org.w3c.*", "javax.net.ssl.*", "jdk.internal.reflect.*" })
 public class BagcreationPluginTest {
@@ -102,7 +102,7 @@ public class BagcreationPluginTest {
         plugin.initialize(step, "something");
         PluginReturnValue answer = plugin.run();
         assertEquals(PluginReturnValue.FINISH, answer);
-        String metsfile = plugin.getTempfolder().toString() + "/METS.xml";
+        String metsfile = plugin.getBag().getIeFolder().toString() + "/METS.xml";
 
         assertTrue(Files.exists(Paths.get(metsfile)));
 
@@ -110,7 +110,7 @@ public class BagcreationPluginTest {
         Element mets = doc.getRootElement();
         assertEquals("10.33510/nls.js.1511270477762", mets.getAttributeValue("OBJID"));
 
-        Path descriptiveMetadataFolder = Paths.get(plugin.getTempfolder().toString(), "metadata/descriptive");
+        Path descriptiveMetadataFolder = Paths.get( plugin.getBag().getMetadataFolder().toString(), "/descriptive");
         // created 4 files for DMDLOG_0001 to DMDLOG_0001
         assertEquals(4, StorageProvider.getInstance().listFiles(descriptiveMetadataFolder.toString()).size());
 
@@ -185,8 +185,8 @@ public class BagcreationPluginTest {
         EasyMock.expect(MetadatenHelper.getMetaFileType(EasyMock.anyString())).andReturn("mets").anyTimes();
         EasyMock.expect(MetadatenHelper.getFileformatByName(EasyMock.anyString(), EasyMock.anyObject())).andReturn(ff).anyTimes();
         EasyMock.expect(MetadatenHelper.getMetadataOfFileformat(EasyMock.anyObject(), EasyMock.anyBoolean()))
-                .andReturn(Collections.emptyMap())
-                .anyTimes();
+        .andReturn(Collections.emptyMap())
+        .anyTimes();
         PowerMock.replay(MetadatenHelper.class);
 
         PowerMock.mockStatic(MetadataManager.class);

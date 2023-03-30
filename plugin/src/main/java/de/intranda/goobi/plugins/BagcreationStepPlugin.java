@@ -114,8 +114,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     private Prefs prefs;
 
     @Getter
-    private String value;
-    @Getter
     private String returnPath;
 
     @Getter
@@ -321,7 +319,9 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         bag.addMetadata("Contact-Name", contactName);
         bag.addMetadata("Contact-Email", contactEmail);
         bag.addMetadata("Bagging-Software", softwareName);
-        // TODO add success/return url
+
+        // TODO add success/return url, create jwt token for it
+
         try {
             bag.addMetadata("Bag-Size", "" + StorageProvider.getInstance().getDirectorySize(bag.getIeFolder()));
         } catch (IOException e) {

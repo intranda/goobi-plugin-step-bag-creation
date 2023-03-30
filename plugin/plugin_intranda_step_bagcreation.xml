@@ -44,6 +44,15 @@
             <softwareName>Goobi</softwareName>       
         </submissionParameter>
 
+        <sftp>
+            <username>user</username>        
+            <password>pw</password>
+            <hostname>127.0.0.1</hostname>
+            <port>22</port>
+            <remoteFolder>/tmp</remoteFolder>
+            <knownHostsFile>~/.ssh/known_hosts</knownHostsFile>
+        </sftp>
+
     </config>
 
 </config_plugin>

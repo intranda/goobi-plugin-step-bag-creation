@@ -53,6 +53,14 @@
             <knownHostsFile>~/.ssh/known_hosts</knownHostsFile>
         </sftp>
 
+
+        <additionalMetadata>
+            <Metadata>
+                <InternalName>HiddenMetadata</InternalName>
+                <WriteXPath>./mods:mods/mods:extension/#intranda:something</WriteXPath>
+            </Metadata>
+        </additionalMetadata>
+
     </config>
 
 </config_plugin>

@@ -5973,10 +5973,12 @@
         <WriteXPath>./mods:mods/mods:originInfo[1]/mods:place/#mods:placeTerm[@type='text']
         </WriteXPath>
       </Metadata>
+      <!-- 
       <Metadata>
         <InternalName>TitleDocMain</InternalName>
         <WriteXPath>./mods:mods/mods:titleInfo/#mods:title</WriteXPath>
       </Metadata>
+      -->
       <Metadata>
         <InternalName>TitleDocSub1</InternalName>
         <WriteXPath>./mods:mods/mods:titleInfo/#mods:subTitle</WriteXPath>

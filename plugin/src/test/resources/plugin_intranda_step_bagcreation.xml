@@ -51,6 +51,14 @@
             <knownHostsFile>~/.ssh/known_hosts</knownHostsFile>
         </sftp>
 
+
+        <additionalMetadata>
+            <Metadata>
+                <InternalName>TitleDocMain</InternalName>
+                <WriteXPath>./mods:mods/mods:titleInfo/#mods:title</WriteXPath>
+            </Metadata>
+        </additionalMetadata>
+
     </config>
 
 </config_plugin>

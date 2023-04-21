@@ -88,6 +88,7 @@ import ugh.dl.Prefs;
 import ugh.dl.VirtualFileGroup;
 import ugh.exceptions.UGHException;
 import ugh.fileformats.mets.MetsModsImportExport;
+import ugh.fileformats.mets.RulesetExtension;
 
 @PluginImplementation
 @Log4j2
@@ -152,6 +153,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     private String contactEmail;
     private String softwareName;
 
+    private SubnodeConfiguration config;
+
     @Override
     public void initialize(Step step, String returnPath) {
         this.returnPath = returnPath;
@@ -161,8 +164,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         prefs = process.getRegelsatz().getPreferences();
 
         // read parameters from correct block in configuration file
-        SubnodeConfiguration myconfig = ConfigPlugins.getProjectAndStepConfig(title, step);
-        List<HierarchicalConfiguration> grps = myconfig.configurationsAt("/filegroups/group");
+        config = ConfigPlugins.getProjectAndStepConfig(title, step);
+        List<HierarchicalConfiguration> grps = config.configurationsAt("/filegroups/group");
         for (HierarchicalConfiguration hc : grps) {
             ProjectFileGroup group = new ProjectFileGroup();
             group.setName(hc.getString("@fileGrpName"));
@@ -172,29 +175,29 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             group.setFolder(hc.getString("@folder"));
             filegroups.add(group);
         }
-        userAgent = myconfig.getString("/userAgent", "");
+        userAgent = config.getString("/userAgent", "");
 
-        rightsOwner = myconfig.getString("/metsParameter/rightsOwner", "");
-        rightsOwnerLogo = myconfig.getString("/metsParameter/rightsOwnerLogo", "");
-        rightsOwnerSiteURL = myconfig.getString("/metsParameter/rightsOwnerSiteURL", "");
-        rightsOwnerContact = myconfig.getString("/metsParameter/rightsOwnerContact", "");
-        metsRightsLicense = myconfig.getString("/metsParameter/metsRightsLicense", "");
-        metsRightsSponsor = myconfig.getString("/metsParameter/metsRightsSponsor", "");
-        metsRightsSponsorLogo = myconfig.getString("/metsParameter/metsRightsSponsorLogo", "");
-        metsRightsSponsorSiteURL = myconfig.getString("/metsParameter/metsRightsSponsorSiteURL", "");
+        rightsOwner = config.getString("/metsParameter/rightsOwner", "");
+        rightsOwnerLogo = config.getString("/metsParameter/rightsOwnerLogo", "");
+        rightsOwnerSiteURL = config.getString("/metsParameter/rightsOwnerSiteURL", "");
+        rightsOwnerContact = config.getString("/metsParameter/rightsOwnerContact", "");
+        metsRightsLicense = config.getString("/metsParameter/metsRightsLicense", "");
+        metsRightsSponsor = config.getString("/metsParameter/metsRightsSponsor", "");
+        metsRightsSponsorLogo = config.getString("/metsParameter/metsRightsSponsorLogo", "");
+        metsRightsSponsorSiteURL = config.getString("/metsParameter/metsRightsSponsorSiteURL", "");
 
-        digiprovPresentation = myconfig.getString("/metsParameter/digiprovPresentation", "");
-        digiprovPresentationAnchor = myconfig.getString("/metsParameter/digiprovPresentationAnchor", "");
-        digiprovReference = myconfig.getString("/metsParameter/digiprovReference", "");
-        digiprovReferenceAnchor = myconfig.getString("/metsParameter/digiprovReferenceAnchor", "");
-        iiifUrl = myconfig.getString("/metsParameter/iiifUrl", "");
-        sruUrl = myconfig.getString("/metsParameter/sruUrl", "");
+        digiprovPresentation = config.getString("/metsParameter/digiprovPresentation", "");
+        digiprovPresentationAnchor = config.getString("/metsParameter/digiprovPresentationAnchor", "");
+        digiprovReference = config.getString("/metsParameter/digiprovReference", "");
+        digiprovReferenceAnchor = config.getString("/metsParameter/digiprovReferenceAnchor", "");
+        iiifUrl = config.getString("/metsParameter/iiifUrl", "");
+        sruUrl = config.getString("/metsParameter/sruUrl", "");
 
-        organizationName = myconfig.getString("/submissionParameter/organizationName", "");
-        organizationAddress = myconfig.getString("/submissionParameter/organizationAddress", "");
-        contactName = myconfig.getString("/submissionParameter/contactName", "");
-        contactEmail = myconfig.getString("/submissionParameter/contactEmail", "");
-        softwareName = myconfig.getString("/submissionParameter/softwareName", "");
+        organizationName = config.getString("/submissionParameter/organizationName", "");
+        organizationAddress = config.getString("/submissionParameter/organizationAddress", "");
+        contactName = config.getString("/submissionParameter/contactName", "");
+        contactEmail = config.getString("/submissionParameter/contactEmail", "");
+        softwareName = config.getString("/submissionParameter/softwareName", "");
 
     }
 
@@ -231,6 +234,9 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             // create export file
 
             MetsModsImportExport exportFilefoExport = new MetsModsImportExport(prefs);
+
+            RulesetExtension.extentRuleset(config, exportFilefoExport);
+
             exportFilefoExport.setDigitalDocument(fileformat.getDigitalDocument());
             exportFilefoExport.setWriteLocal(false);
             exportFilefoExport.getDigitalDocument().addAllContentFiles();

@@ -38,7 +38,7 @@ import com.jcraft.jsch.SftpException;
 import de.sub.goobi.config.ConfigPlugins;
 import de.sub.goobi.helper.StorageProvider;
 import de.sub.goobi.helper.exceptions.SwapException;
-import de.sub.goobi.helper.transfer.SftpUtils;
+import io.goobi.workflow.api.connection.SftpUtils;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import ugh.dl.DocStruct;

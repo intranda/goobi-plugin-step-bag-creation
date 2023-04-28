@@ -24,6 +24,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 
 import org.apache.commons.configuration.SubnodeConfiguration;
+import org.apache.commons.lang.StringUtils;
 import org.goobi.beans.Process;
 import org.goobi.beans.Step;
 import org.goobi.production.enums.PluginGuiType;
@@ -63,6 +64,7 @@ public class BagSubmissionStepPlugin implements IStepPluginVersion2 {
 
     private String sftpUserName;
     private String sftpPassword;
+    private String sftpKeyfile;
     private String sftpHostname;
     private String sftpPathToKnownHostsFile;
     private int sftpPort = 22;
@@ -105,14 +107,24 @@ public class BagSubmissionStepPlugin implements IStepPluginVersion2 {
             log.error(e);
         }
         // open sftp connection
-        try (SftpUtils utils = new SftpUtils(sftpUserName, sftpPassword, sftpHostname, sftpPort, sftpPathToKnownHostsFile)) {
-            // upload file
-            utils.changeRemoteFolder(sftpRemoteFolder);
-            utils.uploadFile(tarFile);
-
-        } catch (JSchException | SftpException e) {
-            log.error(e);
-            return PluginReturnValue.ERROR;
+        if (StringUtils.isBlank(sftpKeyfile)) {
+            try (SftpUtils utils = new SftpUtils(sftpUserName, sftpPassword, sftpHostname, sftpPort, sftpPathToKnownHostsFile)) {
+                // upload file
+                utils.changeRemoteFolder(sftpRemoteFolder);
+                utils.uploadFile(tarFile);
+            } catch (JSchException | SftpException e) {
+                log.error(e);
+                return PluginReturnValue.ERROR;
+            }
+        } else {
+            try (SftpUtils utils = new SftpUtils(sftpUserName, sftpKeyfile, sftpPassword, sftpHostname, sftpPort, sftpPathToKnownHostsFile)) {
+                // upload file
+                utils.changeRemoteFolder(sftpRemoteFolder);
+                utils.uploadFile(tarFile);
+            } catch (JSchException | SftpException e) {
+                log.error(e);
+                return PluginReturnValue.ERROR;
+            }
         }
         // delete local zip file
         try {
@@ -153,6 +165,7 @@ public class BagSubmissionStepPlugin implements IStepPluginVersion2 {
         SubnodeConfiguration myconfig = ConfigPlugins.getProjectAndStepConfig("intranda_step_bagcreation", step);
         sftpUserName = myconfig.getString("/sftp/username");
         sftpPassword = myconfig.getString("/sftp/password");
+        sftpKeyfile = myconfig.getString("/sftp/keyfile");
         sftpHostname = myconfig.getString("/sftp/hostname");
         sftpPathToKnownHostsFile = myconfig.getString("/sftp/knownHostsFile");
         sftpPort = myconfig.getInt("/sftp/port");

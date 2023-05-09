@@ -6,18 +6,22 @@
           3.) project name matches and step name is *
           4.) project name and step name are *
 	-->
-    
+
     <config>
         <!-- which projects to use for (can be more then one, otherwise use *) -->
         <project>*</project>
         <step>*</step>
         <filegroups>
-    		<group folder="master" fileGrpName="Representations/master" prefix="data/" suffix="tif" mimeType="image/tiff" />
-    		<group folder="xml" fileGrpName="Representations/ocr-alto" prefix="data/" mimeType="text/xml" />
-    		<group folder="txt" fileGrpName="Representations/ocr-txt" prefix="data/" mimeType="text/xml" />
-    		<group folder="pdf" fileGrpName="Representations/pdf" prefix="data/" suffix="pdf" mimeType="application/pdf" />
+            <group folder="master" fileGrpName="Representations/master" prefix="data/" suffix="tif"
+                mimeType="image/tiff" />
+            <group folder="xml" fileGrpName="Representations/ocr-alto" prefix="data/"
+                mimeType="text/xml" />
+            <group folder="txt" fileGrpName="Representations/ocr-txt" prefix="data/"
+                mimeType="text/xml" />
+            <group folder="pdf" fileGrpName="Representations/pdf" prefix="data/" suffix="pdf"
+                mimeType="application/pdf" />
         </filegroups>
-        
+
         <metsParameter>
             <userAgent>WU Wien</userAgent>
             <rightsOwner>WU Wien</rightsOwner>
@@ -41,11 +45,11 @@
             <organizationAddress>Organization-Address</organizationAddress>
             <contactName>Contact-Name</contactName>
             <contactEmail>Contact-Email</contactEmail>
-            <softwareName>Goobi</softwareName>       
+            <softwareName>Goobi</softwareName>
         </submissionParameter>
 
         <sftp>
-            <username>user</username>        
+            <username>user</username>
             <password>pw</password>
             <hostname>127.0.0.1</hostname>
             <port>22</port>

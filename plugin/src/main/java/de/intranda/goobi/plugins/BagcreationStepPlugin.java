@@ -325,6 +325,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         bag.addMetadata("Contact-Name", contactName);
         bag.addMetadata("Contact-Email", contactEmail);
         bag.addMetadata("Bagging-Software", softwareName);
+        bag.addMetadata("Process-ID", String.valueOf(process.getId()));
 
         // TODO add success/return url, create jwt token for it
 

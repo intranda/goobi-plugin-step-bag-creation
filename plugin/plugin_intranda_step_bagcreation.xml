@@ -14,10 +14,10 @@
         <filegroups>
             <group folder="master" fileGrpName="Representations/master" prefix="data/" suffix="tif"
                 mimeType="image/tiff" />
-            <group folder="xml" fileGrpName="Representations/ocr-alto" prefix="data/"
+            <group folder="xml" fileGrpName="Representations/ocr-alto" prefix="data/" suffix="xml"
                 mimeType="text/xml" />
-            <group folder="txt" fileGrpName="Representations/ocr-txt" prefix="data/"
-                mimeType="text/xml" />
+            <group folder="txt" fileGrpName="Representations/ocr-txt" prefix="data/" suffix="txt"
+                mimeType="text/plain" />
             <group folder="pdf" fileGrpName="Representations/pdf" prefix="data/" suffix="pdf"
                 mimeType="application/pdf" />
         </filegroups>
@@ -48,14 +48,16 @@
             <softwareName>Goobi</softwareName>
         </submissionParameter>
 
-        <sftp>
+        <connection>
+            <!-- can be ftp or sftp -->
+            <type>sftp</type>
             <username>user</username>
             <password>pw</password>
             <hostname>127.0.0.1</hostname>
             <port>22</port>
             <remoteFolder>/tmp</remoteFolder>
             <knownHostsFile>~/.ssh/known_hosts</knownHostsFile>
-        </sftp>
+        </connection>
 
 
         <additionalMetadata>

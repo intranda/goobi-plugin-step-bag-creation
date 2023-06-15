@@ -100,6 +100,7 @@ public class BagcreationPluginTest {
     public void testRun() throws Exception {
         BagcreationStepPlugin plugin = new BagcreationStepPlugin();
         plugin.initialize(step, "something");
+        plugin.setKeepTempFiles(true);
         PluginReturnValue answer = plugin.run();
         assertEquals(PluginReturnValue.FINISH, answer);
 

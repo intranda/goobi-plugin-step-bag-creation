@@ -79,6 +79,7 @@ import de.sub.goobi.helper.exceptions.DAOException;
 import de.sub.goobi.helper.exceptions.SwapException;
 import de.sub.goobi.helper.files.TarUtils;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 import net.xeoh.plugins.base.annotations.PluginImplementation;
 import ugh.dl.DocStruct;
@@ -116,6 +117,10 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
     @Getter
     private String returnPath;
+
+    @Setter
+    // option keep temp files after bag creation, used for junit tests
+    private boolean keepTempFiles = false;
 
     @Getter
     private transient BagCreation bag;
@@ -168,11 +173,12 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         List<HierarchicalConfiguration> grps = config.configurationsAt("/filegroups/group");
         for (HierarchicalConfiguration hc : grps) {
             ProjectFileGroup group = new ProjectFileGroup();
-            group.setName(hc.getString("@fileGrpName"));
-            group.setPath(hc.getString("@prefix"));
-            group.setMimetype(hc.getString("@mimeType"));
-            group.setSuffix(hc.getString("@suffix"));
-            group.setFolder(hc.getString("@folder"));
+            group.setName(hc.getString("@fileGrpName", ""));
+            group.setPath(hc.getString("@prefix", ""));
+            group.setMimetype(hc.getString("@mimeType", ""));
+            group.setSuffix(hc.getString("@suffix", ""));
+            group.setFolder(hc.getString("@folder", ""));
+            group.setUseOriginalFiles(hc.getBoolean("@useOriginalFileExtension", false));
             filegroups.add(group);
         }
         userAgent = config.getString("/userAgent", "");
@@ -259,6 +265,9 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                     // generate filegroup
                     VirtualFileGroup virt = new VirtualFileGroup(projectFileGroup.getName(), projectFileGroup.getPath(),
                             projectFileGroup.getMimetype(), projectFileGroup.getSuffix());
+
+                    virt.setIgnoreConfiguredMimetypeAndSuffix(projectFileGroup.isUseOriginalFiles());
+
                     exportFilefoExport.getDigitalDocument().getFileSet().addVirtualFileGroup(virt);
                 }
             }
@@ -314,8 +323,11 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             log.error(e);
         }
 
-        // TODO clean up temporary files after file was created
-
+        // clean up temporary files after file was created
+        if (!keepTempFiles) {
+            Path folder = bag.getBagitRoot();
+            StorageProvider.getInstance().deleteDir(folder);
+        }
         return PluginReturnValue.FINISH;
     }
 
@@ -326,8 +338,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         bag.addMetadata("Contact-Email", contactEmail);
         bag.addMetadata("Bagging-Software", softwareName);
         bag.addMetadata("Process-ID", String.valueOf(process.getId()));
-
-        // TODO add success/return url, create jwt token for it
 
         try {
             bag.addMetadata("Bag-Size", "" + StorageProvider.getInstance().getDirectorySize(bag.getIeFolder()));

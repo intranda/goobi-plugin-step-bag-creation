@@ -548,27 +548,46 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         Element fileSec = mets.getChild("fileSec", metsNamespace);
         fileSec.setAttribute("ID", "uuid-" + UUID.randomUUID().toString()); // CSIP59
 
+        List<Element> filegroupsToDelete = new ArrayList<>();
+
         for (Element fileGrp : fileSec.getChildren("fileGrp", metsNamespace)) {
             fileGrp.setAttribute("ID", "uuid-" + UUID.randomUUID().toString());
 
             String name = fileGrp.getAttributeValue("USE");
             List<Path> filesInFolder = files.get(name);
-            // TODO remove filegrp if file list is empty
 
+            // remove filegrp if file list is empty
+            if (filesInFolder.isEmpty()) {
+                filegroupsToDelete.add(fileGrp);
+                continue;
+            }
+            List<Element> filesToDelete = new ArrayList<>();
             List<Element> filesInXml = fileGrp.getChildren("file", metsNamespace);
             for (int i = 0; i < filesInXml.size(); i++) {
                 Element fileElement = filesInXml.get(i);
-                Path file = filesInFolder.get(i);
-                // checksum, filesize, changedate
-                // TODO if filesize is smaller, remove superfluous files
-                // TODO overwrite mimetype and filename?
-                fileElement.setAttribute("SIZE", "" + StorageProvider.getInstance().getFileSize(file)); // CSIP69
-                fileElement.setAttribute("CREATED", StorageProvider.getInstance().getFileCreationTime(file)); // CSIP70
-                fileElement.setAttribute("CHECKSUM", StorageProvider.getInstance().createSha256Checksum(file)); // CSIP71
-                fileElement.setAttribute("CHECKSUMTYPE", "SHA-256"); // CSIP72
-                Element flocat = fileElement.getChild("FLocat", metsNamespace);
-                flocat.setAttribute("type", "simple", xlinkNamespace); // CSIP78
+                if (filesInFolder.size() > i) {
+                    Path file = filesInFolder.get(i);
+                    // checksum, filesize, changedate
+                    fileElement.setAttribute("SIZE", "" + StorageProvider.getInstance().getFileSize(file)); // CSIP69
+                    fileElement.setAttribute("CREATED", StorageProvider.getInstance().getFileCreationTime(file)); // CSIP70
+                    fileElement.setAttribute("CHECKSUM", StorageProvider.getInstance().createSha256Checksum(file)); // CSIP71
+                    fileElement.setAttribute("CHECKSUMTYPE", "SHA-256"); // CSIP72
+                    Element flocat = fileElement.getChild("FLocat", metsNamespace);
+                    flocat.setAttribute("type", "simple", xlinkNamespace); // CSIP78
+                    //  overwrite mimetype and filename?
+
+                } else  {
+                    // if actual filesize is smaller than filegroup size, remove superfluous files
+                    filesToDelete.add(fileElement);
+                }
             }
+            for (Element file : filesToDelete) {
+                fileGrp.removeContent(file);
+            }
+        }
+
+        for (Element fileGroup : filegroupsToDelete) {
+            fileSec.removeContent(fileGroup);
         }
 
         // create separate file for each fileGrp, create link to the file with mdRef (CSIP76 - SIP35)
@@ -599,9 +618,10 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         String use = fileGrp.getAttributeValue("USE");
         fileGrp.setAttribute("USE", "Data"); // replace use value
         String fileGrpType = use.replace("Representations/", "");
-
+        int numberOfFiles = 0;
         List<String> fileIdentifier = new ArrayList<>();
         for (Element file : fileGrp.getChildren("file", metsNamespace)) {
+            numberOfFiles++;
             String fileId = file.getAttributeValue("ID");
             fileIdentifier.add(fileId);
             if (!fileId.startsWith("uuid")) {
@@ -635,12 +655,10 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         fileSec.addContent(fileGrp);
 
         // structMap
-
         List<Element> structMaps = oldMets.getChildren("structMap", metsNamespace);
         for (Element structMap : structMaps) {
             if ("PHYSICAL".equals(structMap.getAttributeValue("TYPE"))) {
-                // TODO remove non existing, superfluous files
-                createPhysicalStructMap(fileGrpType, fileIdentifier, metsRoot, structMap);
+                createPhysicalStructMap(fileGrpType, fileIdentifier, metsRoot, structMap, numberOfFiles);
             }
 
         }
@@ -681,7 +699,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         return file;
     }
 
-    private void createPhysicalStructMap(String fileGrpType, List<String> fileIdentifier, Element metsRoot, Element structMap) {
+    private void createPhysicalStructMap(String fileGrpType, List<String> fileIdentifier, Element metsRoot, Element structMap, int numberOfFiles) {
         Element physSequence = structMap.getChild("div", metsNamespace).clone();
 
         Element physicalStructMap = new Element("structMap", metsNamespace);
@@ -699,9 +717,11 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         physSequence.setAttribute("LABEL", "Data");
 
         div.addContent(physSequence);
+        // TODO remove non existing, superfluous files
 
         // run through fptr and remove fptr for other filegroups
         List<Element> fptrRemoveList = new ArrayList<>();
+        List<Element> pageRemoveList = new ArrayList<>();
         for (Element page : physSequence.getChildren("div", metsNamespace)) {
             for (Element fptr : page.getChildren("fptr", metsNamespace)) {
                 String fptrId = fptr.getAttributeValue("FILEID");

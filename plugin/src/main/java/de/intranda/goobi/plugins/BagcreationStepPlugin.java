@@ -553,12 +553,15 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
             String name = fileGrp.getAttributeValue("USE");
             List<Path> filesInFolder = files.get(name);
+            // TODO remove filegrp if file list is empty
+
             List<Element> filesInXml = fileGrp.getChildren("file", metsNamespace);
             for (int i = 0; i < filesInXml.size(); i++) {
                 Element fileElement = filesInXml.get(i);
                 Path file = filesInFolder.get(i);
                 // checksum, filesize, changedate
-
+                // TODO if filesize is smaller, remove superfluous files
+                // TODO overwrite mimetype and filename?
                 fileElement.setAttribute("SIZE", "" + StorageProvider.getInstance().getFileSize(file)); // CSIP69
                 fileElement.setAttribute("CREATED", StorageProvider.getInstance().getFileCreationTime(file)); // CSIP70
                 fileElement.setAttribute("CHECKSUM", StorageProvider.getInstance().createSha256Checksum(file)); // CSIP71
@@ -636,6 +639,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         List<Element> structMaps = oldMets.getChildren("structMap", metsNamespace);
         for (Element structMap : structMaps) {
             if ("PHYSICAL".equals(structMap.getAttributeValue("TYPE"))) {
+                // TODO remove non existing, superfluous files
                 createPhysicalStructMap(fileGrpType, fileIdentifier, metsRoot, structMap);
             }
 
@@ -644,6 +648,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         // structLink
         Element structLink = oldMets.getChild("structLink", metsNamespace).clone();
         for (Element smLink : structLink.getChildren()) {
+            // TODO remove non existing, superfluous files
             smLink.setAttribute("from", "../../METS.xml#" + smLink.getAttributeValue("from", xlinkNamespace), xlinkNamespace);
         }
         metsRoot.addContent(structLink);
@@ -761,6 +766,9 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                     break;
                 case "pdf":
                     sourceFolder = Paths.get(process.getOcrPdfDirectory());
+                    break;
+                case "import":
+                    sourceFolder = Paths.get(process.getImportDirectory());
                     break;
                 default:
                     sourceFolder = Paths.get(process.getConfiguredImageFolder(folder));

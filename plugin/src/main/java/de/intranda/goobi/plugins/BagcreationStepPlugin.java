@@ -56,6 +56,7 @@ import org.goobi.beans.Process;
 import org.goobi.beans.Project;
 import org.goobi.beans.ProjectFileGroup;
 import org.goobi.beans.Step;
+import org.goobi.production.GoobiVersion;
 import org.goobi.production.enums.PluginGuiType;
 import org.goobi.production.enums.PluginReturnValue;
 import org.goobi.production.enums.PluginType;
@@ -535,6 +536,11 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         Element note = agent.getChild("note", metsNamespace);
         note.setAttribute("NOTETYPE", "IDENTIFICATIONCODE", csipNamespace); // SIP14
 
+        Element noteVersion = new Element("note", metsNamespace);
+        noteVersion.setAttribute("NOTETYPE", "SOFTWARE VERSION", csipNamespace); // SIP20
+        noteVersion.setText(GoobiVersion.getBuildversion());
+        agent.addContent(noteVersion);
+
         Element agent2 = new Element("agent", metsNamespace);
         agent2.setAttribute("ROLE", "CREATOR"); // SIP16
         agent2.setAttribute("TYPE", "ORGANIZATION"); // SIP17
@@ -893,7 +899,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         for (String ns : usedPrefixes) {
             switch (ns) {
                 case "mets":
-                    sb.append("http://www.loc.gov/METS/ http://www.loc.gov/standards/mets/version112/mets.xsd");
+                    sb.append(" http://www.loc.gov/METS/ http://www.loc.gov/standards/mets/mets.xsd");
                     break;
                 case "premis":
                     sb.append(" http://www.loc.gov/standards/premis/ http://www.loc.gov/standards/premis/v2/premis-v2-0.xsd");

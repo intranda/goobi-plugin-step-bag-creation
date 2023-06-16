@@ -439,7 +439,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 // create deep copy
                 Element copy = rights.clone();
                 try {
-                    Element mdRef = createMetadataFile(copy, "other", "DVRIGHTS", "");
+                    Element mdRef = createMetadataFile(copy, "other/", "DVRIGHTS", "");
                     mdRef.setAttribute("MDTYPE", "OTHER");
                     mdRef.setAttribute("OTHERMDTYPE", "DVRIGHTS");
                     rightsMD.removeContent(mdWrap);
@@ -893,7 +893,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         for (String ns : usedPrefixes) {
             switch (ns) {
                 case "mets":
-                    sb.append("http://www.loc.gov/METS/ http://www.loc.gov/standards/mets/mets.xsd");
+                    sb.append("http://www.loc.gov/METS/ http://www.loc.gov/standards/mets/version112/mets.xsd");
                     break;
                 case "premis":
                     sb.append(" http://www.loc.gov/standards/premis/ http://www.loc.gov/standards/premis/v2/premis-v2-0.xsd");
@@ -904,7 +904,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 case "mix":
                     sb.append(" http://www.loc.gov/standards/mix/ http://www.loc.gov/standards/mix/mix.xsd");
                     break;
-                case "xmlink":
+                case "xlink":
                     sb.append(" http://www.w3.org/1999/xlink http://www.w3.org/XML/2008/06/xlink.xsd");
                     break;
                 case "csip":
@@ -918,10 +918,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                     break;
             }
         }
-
-        // check if xsi namespace is present, otherwise add it schemaLocation?
         rootElement.setAttribute("schemaLocation", sb.toString(), xsiNamespace);
-
     }
 
     /**

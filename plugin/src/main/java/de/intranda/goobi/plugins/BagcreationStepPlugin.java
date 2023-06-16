@@ -457,8 +457,16 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         StringBuilder ids = new StringBuilder();
 
         List<Element> dmdSecs = mets.getChildren("dmdSec", metsNamespace);
+        Element mainElement = dmdSecs.get(0);
+        mainElement.setAttribute("ID", "MODS");
+
         for (Element dmdSec : dmdSecs) {
             String dmdSecId = dmdSec.getAttributeValue("ID");
+            if (dmdSecId.startsWith("DMDLOG")) {
+                dmdSecId = "MODS-" + dmdSecId;
+                dmdSec.setAttribute("ID", dmdSecId);
+            }
+
             if (ids.length() > 0) {
                 ids.append(" ");
             }
@@ -919,7 +927,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 case "sip":
                     sb.append(" https://DILCIS.eu/XML/METS/SIPExtensionMETS https://earksip.dilcis.eu/schema/DILCISExtensionSIPMETS.xsd");
                     break;
-                // TODO dv
                 default:
                     break;
             }

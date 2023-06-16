@@ -61,6 +61,7 @@ import org.goobi.production.enums.PluginReturnValue;
 import org.goobi.production.enums.PluginType;
 import org.goobi.production.enums.StepReturnValue;
 import org.goobi.production.plugin.interfaces.IStepPluginVersion2;
+import org.jdom2.Attribute;
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.JDOMException;
@@ -102,6 +103,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     private static final Namespace xlinkNamespace = Namespace.getNamespace("xlink", "http://www.w3.org/1999/xlink");
     private static final Namespace dvNamespace = Namespace.getNamespace("dv", "http://dfg-viewer.de/");
     private static final Namespace xsiNamespace = Namespace.getNamespace("xsi", "http://www.w3.org/2001/XMLSchema-instance");
+
+    private static final String schemaLocation = ""; // TODO
 
     private static final long serialVersionUID = 211912948222450125L;
     @Getter
@@ -305,6 +308,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
             removeStructLinks(mets);
 
+            cleanUpNamespacesAndSchemaLocation(mets);
             // save enhanced file
             XMLOutputter xmlOut = new XMLOutputter(Format.getPrettyFormat());
             FileOutputStream fos = new FileOutputStream(bag.getIeFolder() + "/METS.xml");
@@ -487,7 +491,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             root.addNamespaceDeclaration(xsiNamespace);
             root.setAttribute("schemaLocation", schemaLocation, xsiNamespace);
         }
-
+        //TODO rename main element
         Document doc = new Document();
         doc.setRootElement(root);
         Path fileName = null;
@@ -498,6 +502,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             fileName = Paths.get(bag.getMetadataFolder().toString(), filename + ".xml");
         }
 
+        cleanUpNamespacesAndSchemaLocation(root);
         XMLOutputter xmlOut = new XMLOutputter(Format.getPrettyFormat());
         FileOutputStream fos = new FileOutputStream(fileName.toString());
         xmlOut.output(doc, fos);
@@ -510,7 +515,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         mdRef.setAttribute("MIMETYPE", "text/xml");
         mdRef.setAttribute("CHECKSUMTYPE", "SHA-256");
         mdRef.setAttribute("type", "simple", xlinkNamespace);
-        mdRef.setAttribute("href", subFolder + filename + "xml", xlinkNamespace);
+        mdRef.setAttribute("href", subFolder + filename + ".xml", xlinkNamespace);
 
         mdRef.setAttribute("SIZE", "" + StorageProvider.getInstance().getFileSize(fileName));
         mdRef.setAttribute("CREATED", StorageProvider.getInstance().getFileCreationTime(fileName));
@@ -689,6 +694,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         fileName = Paths.get(bag.getObjectsFolder().toString(), fileGrpType, "METS.xml");
         StorageProvider.getInstance().createDirectories(fileName.getParent());
 
+        cleanUpNamespacesAndSchemaLocation(metsRoot);
         XMLOutputter xmlOut = new XMLOutputter(Format.getPrettyFormat());
         FileOutputStream fos = new FileOutputStream(fileName.toString());
         xmlOut.output(doc, fos);
@@ -861,6 +867,90 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     public boolean execute() {
         PluginReturnValue ret = run();
         return ret != PluginReturnValue.ERROR;
+    }
+
+    private static void cleanUpNamespacesAndSchemaLocation(Element rootElement) {
+        // first find all used namespaces
+        List<String> usedPrefixes = new ArrayList<>();
+        getUsedNamespaceList(rootElement, usedPrefixes);
+
+        List<Namespace> allNamespaces = rootElement.getAdditionalNamespaces();
+        List<Namespace> superfluousNamespaces = new ArrayList<>();
+        // run through all namespaces, check if namespace is used
+        for (Namespace ns : allNamespaces) {
+            if (StringUtils.isNotBlank(ns.getPrefix()) && !usedPrefixes.contains(ns.getPrefix())) {
+                superfluousNamespaces.add(ns);
+            }
+        }
+        // remove all unused namespaces
+        for (Namespace ns : superfluousNamespaces) {
+            rootElement.removeNamespaceDeclaration(ns);
+        }
+
+        // build schemaLocation for all remaining namespaces
+
+        StringBuilder sb = new StringBuilder();
+        for (String ns : usedPrefixes) {
+            switch (ns) {
+                case "mets":
+                    sb.append("http://www.loc.gov/METS/ http://www.loc.gov/standards/mets/mets.xsd");
+                    break;
+                case "premis":
+                    sb.append(" http://www.loc.gov/standards/premis/ http://www.loc.gov/standards/premis/v2/premis-v2-0.xsd");
+                    break;
+                case "mods":
+                    sb.append(" http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-7.xsd");
+                    break;
+                case "mix":
+                    sb.append(" http://www.loc.gov/standards/mix/ http://www.loc.gov/standards/mix/mix.xsd");
+                    break;
+                case "xmlink":
+                    sb.append(" http://www.w3.org/1999/xlink http://www.w3.org/XML/2008/06/xlink.xsd");
+                    break;
+                case "csip":
+                    sb.append(" https://DILCIS.eu/XML/METS/CSIPExtensionMETS https://earkcsip.dilcis.eu/schema/DILCISExtensionMETS.xsd");
+                    break;
+                case "sip":
+                    sb.append(" https://DILCIS.eu/XML/METS/SIPExtensionMETS https://earksip.dilcis.eu/schema/DILCISExtensionSIPMETS.xsd");
+                    break;
+                // TODO dv
+                default:
+                    break;
+            }
+        }
+
+        // check if xsi namespace is present, otherwise add it schemaLocation?
+        rootElement.setAttribute("schemaLocation", sb.toString(), xsiNamespace);
+
+    }
+
+    /**
+     * Collect all namespaces from given element and its children
+     * 
+     * @param element
+     * @param prefixList
+     */
+    private static void getUsedNamespaceList(Element element, List<String> prefixList) {
+        String prefix = element.getNamespacePrefix();
+        if (StringUtils.isNotBlank(prefix) && !prefixList.contains(prefix)) {
+            prefixList.add(prefix);
+        }
+        for (Attribute attr : element.getAttributes()) {
+            Namespace attrNamespace = attr.getNamespace();
+            if (attrNamespace != null && StringUtils.isNotBlank(attrNamespace.getPrefix())) {
+                String attrPrefix = attrNamespace.getPrefix();
+                if (StringUtils.isNotBlank(attrPrefix) && !prefixList.contains(attrPrefix)) {
+                    prefixList.add(attrPrefix);
+                }
+            }
+        }
+
+        List<Element> children = element.getChildren();
+        if (children != null) {
+            for (Element child : children) {
+                getUsedNamespaceList(child, prefixList);
+            }
+        }
     }
 
 }

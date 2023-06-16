@@ -576,7 +576,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                     flocat.setAttribute("type", "simple", xlinkNamespace); // CSIP78
                     //  overwrite mimetype and filename?
 
-                } else  {
+                } else {
                     // if actual filesize is smaller than filegroup size, remove superfluous files
                     filesToDelete.add(fileElement);
                 }
@@ -665,10 +665,22 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
         // structLink
         Element structLink = oldMets.getChild("structLink", metsNamespace).clone();
+        //  remove non existing, superfluous files
+        int pageNo = 0;
+        List<Element> smLinkRemoveList = new ArrayList<>();
         for (Element smLink : structLink.getChildren()) {
-            // TODO remove non existing, superfluous files
-            smLink.setAttribute("from", "../../METS.xml#" + smLink.getAttributeValue("from", xlinkNamespace), xlinkNamespace);
+            if (pageNo < numberOfFiles) {
+                smLink.setAttribute("from", "../../METS.xml#" + smLink.getAttributeValue("from", xlinkNamespace), xlinkNamespace);
+            } else {
+                smLinkRemoveList.add(smLink);
+            }
+            pageNo++;
         }
+
+        for (Element page : smLinkRemoveList) {
+            structLink.removeContent(page);
+        }
+
         metsRoot.addContent(structLink);
 
         Document doc = new Document();
@@ -717,24 +729,34 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         physSequence.setAttribute("LABEL", "Data");
 
         div.addContent(physSequence);
-        // TODO remove non existing, superfluous files
+        // remove non existing, superfluous files
 
         // run through fptr and remove fptr for other filegroups
         List<Element> fptrRemoveList = new ArrayList<>();
         List<Element> pageRemoveList = new ArrayList<>();
+        int pageNo = 0;
         for (Element page : physSequence.getChildren("div", metsNamespace)) {
-            for (Element fptr : page.getChildren("fptr", metsNamespace)) {
-                String fptrId = fptr.getAttributeValue("FILEID");
-                if (!fileIdentifier.contains(fptrId)) {
-                    fptrRemoveList.add(fptr);
-                } else if (!fptrId.startsWith("uuid")) {
-                    fptr.setAttribute("FILEID", "uuid-" + fptrId);
+            if (pageNo < numberOfFiles) {
+                for (Element fptr : page.getChildren("fptr", metsNamespace)) {
+                    String fptrId = fptr.getAttributeValue("FILEID");
+                    if (!fileIdentifier.contains(fptrId)) {
+                        fptrRemoveList.add(fptr);
+                    } else if (!fptrId.startsWith("uuid")) {
+                        fptr.setAttribute("FILEID", "uuid-" + fptrId);
+                    }
                 }
+            } else {
+                pageRemoveList.add(page);
             }
+            pageNo++;
         }
         for (Element fptr : fptrRemoveList) {
             fptr.getParent().removeContent(fptr);
         }
+        for (Element page : pageRemoveList) {
+            physSequence.removeContent(page);
+        }
+
     }
 
     private void setProjectParameter(String identifier, VariableReplacer vp, MetsModsImportExport exportFilefoExport) {

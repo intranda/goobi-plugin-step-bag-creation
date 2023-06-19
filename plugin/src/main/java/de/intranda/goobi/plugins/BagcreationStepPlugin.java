@@ -105,8 +105,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     private static final Namespace dvNamespace = Namespace.getNamespace("dv", "http://dfg-viewer.de/");
     private static final Namespace xsiNamespace = Namespace.getNamespace("xsi", "http://www.w3.org/2001/XMLSchema-instance");
 
-    private static final String schemaLocation = ""; // TODO
-
     private static final long serialVersionUID = 211912948222450125L;
     @Getter
     private String title = "intranda_step_bagcreation";
@@ -687,6 +685,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         //  remove non existing, superfluous files
         int pageNo = 0;
         List<Element> smLinkRemoveList = new ArrayList<>();
+        // TODO area
         for (Element smLink : structLink.getChildren()) {
             if (pageNo < numberOfFiles) {
                 smLink.setAttribute("from", "../../METS.xml#" + smLink.getAttributeValue("from", xlinkNamespace), xlinkNamespace);
@@ -763,6 +762,18 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                         fptrRemoveList.add(fptr);
                     } else if (!fptrId.startsWith("uuid")) {
                         fptr.setAttribute("FILEID", "uuid-" + fptrId);
+                    }
+
+                    List<Element> fileSeq = fptr.getChildren("seq", metsNamespace);
+                    if (fileSeq != null) {
+                        for (Element seq : fileSeq) {
+                            for (Element area : seq.getChildren("area", metsNamespace)) {
+                                String areaId = area.getAttributeValue("FILEID");
+                                if (!areaId.startsWith("uuid")) {
+                                    area.setAttribute("FILEID", "uuid-" + areaId);
+                                }
+                            }
+                        }
                     }
                 }
             } else {

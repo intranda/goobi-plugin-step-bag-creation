@@ -99,7 +99,7 @@ public class BagSubmissionStepPlugin implements IStepPluginVersion2 {
             // check if tar file exists
 
             tarFile = Paths.get(process.getProcessDataDirectory(), identifier.replace("/", "_") + ".tar");
-
+            // TODO rename file before upload
             if (!StorageProvider.getInstance().isFileExists(tarFile)) {
                 // file not found, cancel
                 return PluginReturnValue.ERROR;
@@ -109,7 +109,16 @@ public class BagSubmissionStepPlugin implements IStepPluginVersion2 {
             log.error(e);
         }
         if ("ftp".equalsIgnoreCase(connectionType)) {
-            try ( FtpUtils connection = new FtpUtils(userName, password, hostname, port)) {
+            try (FtpUtils connection = new FtpUtils(userName, password, hostname, port)) {
+                // upload file
+                connection.changeRemoteFolder(sftpRemoteFolder);
+                connection.uploadFile(tarFile);
+            } catch (Exception e) {
+                log.error(e);
+                return PluginReturnValue.ERROR;
+            }
+        } else if (StringUtils.isBlank(sftpKeyfile)) {
+            try (SftpUtils connection = new SftpUtils(userName, password, hostname, port, sftpPathToKnownHostsFile)) {
                 // upload file
                 connection.changeRemoteFolder(sftpRemoteFolder);
                 connection.uploadFile(tarFile);
@@ -118,24 +127,13 @@ public class BagSubmissionStepPlugin implements IStepPluginVersion2 {
                 return PluginReturnValue.ERROR;
             }
         } else {
-            if (StringUtils.isBlank(sftpKeyfile)) {
-                try (SftpUtils connection = new SftpUtils(userName, password, hostname, port, sftpPathToKnownHostsFile)) {
-                    // upload file
-                    connection.changeRemoteFolder(sftpRemoteFolder);
-                    connection.uploadFile(tarFile);
-                } catch (Exception e) {
-                    log.error(e);
-                    return PluginReturnValue.ERROR;
-                }
-            } else {
-                try (SftpUtils connection = new SftpUtils(userName, sftpKeyfile, password, hostname, port, sftpPathToKnownHostsFile)) {
-                    // upload file
-                    connection.changeRemoteFolder(sftpRemoteFolder);
-                    connection.uploadFile(tarFile);
-                } catch (Exception e) {
-                    log.error(e);
-                    return PluginReturnValue.ERROR;
-                }
+            try (SftpUtils connection = new SftpUtils(userName, sftpKeyfile, password, hostname, port, sftpPathToKnownHostsFile)) {
+                // upload file
+                connection.changeRemoteFolder(sftpRemoteFolder);
+                connection.uploadFile(tarFile);
+            } catch (Exception e) {
+                log.error(e);
+                return PluginReturnValue.ERROR;
             }
         }
         // delete local zip file

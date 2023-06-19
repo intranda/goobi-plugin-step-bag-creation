@@ -498,7 +498,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             root.addNamespaceDeclaration(xsiNamespace);
             root.setAttribute("schemaLocation", schemaLocation, xsiNamespace);
         }
-        //TODO rename main element
+
         Document doc = new Document();
         doc.setRootElement(root);
         Path fileName = null;
@@ -672,10 +672,11 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         fileSec.addContent(fileGrp);
 
         // structMap
+        List<String> pageIDs = new ArrayList<>();
         List<Element> structMaps = oldMets.getChildren("structMap", metsNamespace);
         for (Element structMap : structMaps) {
             if ("PHYSICAL".equals(structMap.getAttributeValue("TYPE"))) {
-                createPhysicalStructMap(fileGrpType, fileIdentifier, metsRoot, structMap, numberOfFiles);
+                pageIDs = createPhysicalStructMap(fileGrpType, fileIdentifier, metsRoot, structMap, numberOfFiles);
             }
 
         }
@@ -683,16 +684,15 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         // structLink
         Element structLink = oldMets.getChild("structLink", metsNamespace).clone();
         //  remove non existing, superfluous files
-        int pageNo = 0;
         List<Element> smLinkRemoveList = new ArrayList<>();
-        // TODO area
+
         for (Element smLink : structLink.getChildren()) {
-            if (pageNo < numberOfFiles) {
+            String toId = smLink.getAttributeValue("to", xlinkNamespace);
+            if (pageIDs.contains(toId)) {
                 smLink.setAttribute("from", "../../METS.xml#" + smLink.getAttributeValue("from", xlinkNamespace), xlinkNamespace);
             } else {
                 smLinkRemoveList.add(smLink);
             }
-            pageNo++;
         }
 
         for (Element page : smLinkRemoveList) {
@@ -730,7 +730,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         return file;
     }
 
-    private void createPhysicalStructMap(String fileGrpType, List<String> fileIdentifier, Element metsRoot, Element structMap, int numberOfFiles) {
+    private List<String> createPhysicalStructMap(String fileGrpType, List<String> fileIdentifier, Element metsRoot, Element structMap,
+            int numberOfFiles) {
         Element physSequence = structMap.getChild("div", metsNamespace).clone();
 
         Element physicalStructMap = new Element("structMap", metsNamespace);
@@ -787,7 +788,24 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         for (Element page : pageRemoveList) {
             physSequence.removeContent(page);
         }
-
+        // finally list all remaining page/area identifier
+        List<String> idList = new ArrayList<>();
+        for (Element page : physSequence.getChildren("div", metsNamespace)) {
+            String pageId = page.getAttributeValue("ID");
+            idList.add(pageId);
+            for (Element fptr : page.getChildren("fptr", metsNamespace)) {
+                List<Element> fileSeq = fptr.getChildren("seq", metsNamespace);
+                if (fileSeq != null) {
+                    for (Element seq : fileSeq) {
+                        for (Element area : seq.getChildren("area", metsNamespace)) {
+                            String areaId = area.getAttributeValue("ID");
+                            idList.add(areaId);
+                        }
+                    }
+                }
+            }
+        }
+        return idList;
     }
 
     private void setProjectParameter(String identifier, VariableReplacer vp, MetsModsImportExport exportFilefoExport) {

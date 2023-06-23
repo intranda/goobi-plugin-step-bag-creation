@@ -290,7 +290,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             mets.addNamespaceDeclaration(sipNamespace);
             mets.addNamespaceDeclaration(csipNamespace);
             mets.setAttribute("TYPE", "Mixed"); // CSIP2
-            mets.setAttribute("PROFILE", "https://earkcsip.dilcis.eu/profile/E-ARK-CSIP.xml"); // SIP2
+            mets.setAttribute("PROFILE", "https://earksip.dilcis.eu/profile/E-ARK-SIP.xml"); // SIP2
             mets.setAttribute("CONTENTINFORMATIONTYPE", "MIXED", csipNamespace); // CSIP4
 
             // enhance existing agent, add additional user agent for submitting agent (SIP4 - SIP 31)
@@ -656,7 +656,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         metsRoot.setAttribute("LABEL", fileGrpType + " copy");
         metsRoot.setAttribute("TYPE", "Mixed");
         metsRoot.setAttribute("CONTENTINFORMATIONTYPE", "MIXED", csipNamespace);
-        metsRoot.setAttribute("PROFILE", "https://earkcsip.dilcis.eu/profile/E-ARK-CSIP.xml");
+        metsRoot.setAttribute("PROFILE", "https://earksip.dilcis.eu/profile/E-ARK-SIP.xml");
         metsRoot.setAttribute("schemaLocation",
                 "http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-7.xsd http://www.loc.gov/METS/ http://www.loc.gov/standards/mets/mets.xsd",
                 xsiNamespace);

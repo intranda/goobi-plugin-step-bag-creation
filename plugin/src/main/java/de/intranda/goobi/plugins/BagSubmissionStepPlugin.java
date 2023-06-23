@@ -101,12 +101,12 @@ public class BagSubmissionStepPlugin implements IStepPluginVersion2 {
 
             Path tarFile = Paths.get(process.getProcessDataDirectory(), identifier.replace("/", "_") + ".tar");
             //  rename file before upload
-            renamedTarFile = Paths.get(process.getProcessDataDirectory(), UUID.randomUUID().toString() + ".tar");
-            StorageProvider.getInstance().move(tarFile, renamedTarFile);
             if (!StorageProvider.getInstance().isFileExists(tarFile)) {
                 // file not found, cancel
                 return PluginReturnValue.ERROR;
             }
+            renamedTarFile = Paths.get(process.getProcessDataDirectory(), UUID.randomUUID().toString() + ".tar");
+            StorageProvider.getInstance().move(tarFile, renamedTarFile);
 
         } catch (UGHException | IOException | SwapException e) {
             log.error(e);

@@ -415,7 +415,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 // create deep copy
                 Element copy = links.clone();
                 try {
-                    Element mdRef = createMetadataFile(copy, "other/", "DIGIPROV", "");
+                    Element mdRef = createMetadataFile(copy, "metadata/", "other/", "DIGIPROV", "");
                     mdRef.setAttribute("MDTYPE", "OTHER");
                     mdRef.setAttribute("OTHERMDTYPE", "DVLINKS");
 
@@ -438,7 +438,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 // create deep copy
                 Element copy = rights.clone();
                 try {
-                    Element mdRef = createMetadataFile(copy, "other/", "DVRIGHTS", "");
+                    Element mdRef = createMetadataFile(copy, "metadata/", "other/", "DVRIGHTS", "");
                     mdRef.setAttribute("MDTYPE", "OTHER");
                     mdRef.setAttribute("OTHERMDTYPE", "DVRIGHTS");
                     rightsMD.removeContent(mdWrap);
@@ -455,14 +455,36 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         StringBuilder ids = new StringBuilder();
 
         List<Element> dmdSecs = mets.getChildren("dmdSec", metsNamespace);
+        List<Element> logicalElements = new ArrayList<>();
+        List<Element> structMaps = mets.getChildren("structMap", metsNamespace);
+        for (Element structMap : structMaps) {
+            if ("LOGICAL".equals(structMap.getAttributeValue("TYPE"))) {
+                logicalElements.add(structMap);
+                getAllDivElements(logicalElements, structMap);
+            }
+        }
         Element mainElement = dmdSecs.get(0);
         mainElement.setAttribute("ID", "MODS");
+        logicalElements.get(0).setAttribute("DMDID", "MODS");
 
         for (Element dmdSec : dmdSecs) {
             String dmdSecId = dmdSec.getAttributeValue("ID");
+            Element logicalDiv = null;
+            for (Element div : logicalElements) {
+                String divId = div.getAttributeValue("DMDID");
+                if (StringUtils.isNotBlank(divId) && divId.equals(dmdSecId)) {
+                    logicalDiv = div;
+                    break;
+                }
+            }
+
             if (dmdSecId.startsWith("DMDLOG")) {
                 dmdSecId = "MODS-" + dmdSecId;
                 dmdSec.setAttribute("ID", dmdSecId);
+            }
+
+            if (logicalDiv != null) {
+                logicalDiv.setAttribute("DMDID", dmdSecId);
             }
 
             if (ids.length() > 0) {
@@ -482,18 +504,32 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             Element copy = mods.clone();
             try {
                 // create external file, remove content from dmdSec, add file reference to dmdSec,
-                Element mdRef = createMetadataFile(copy, "descriptive/", dmdSecId,
+                Element mdRef = createMetadataFile(copy, "metadata/", "descriptive/", dmdSecId,
                         "http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-7.xsd");
                 dmdSec.removeContent(mdWrap);
                 dmdSec.addContent(mdRef);
             } catch (IOException e) {
                 log.error(e);
             }
+
         }
         return ids.toString();
     }
 
-    private Element createMetadataFile(Element root, String subFolder, String filename, String schemaLocation) throws IOException {
+    private void getAllDivElements(List<Element> logicalElements, Element structMap) {
+        List<Element> divs = structMap.getChildren();
+        if (!divs.isEmpty()) {
+            logicalElements.addAll(divs);
+            for (Element div : divs) {
+                if (!div.getChildren().isEmpty()) {
+                    getAllDivElements(logicalElements, div);
+                }
+            }
+        }
+    }
+
+    private Element createMetadataFile(Element root, String metadataFolder, String subFolder, String filename, String schemaLocation)
+            throws IOException {
         if (StringUtils.isNotBlank(schemaLocation)) {
             root.addNamespaceDeclaration(xsiNamespace);
             root.setAttribute("schemaLocation", schemaLocation, xsiNamespace);
@@ -522,7 +558,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         mdRef.setAttribute("MIMETYPE", "text/xml");
         mdRef.setAttribute("CHECKSUMTYPE", "SHA-256");
         mdRef.setAttribute("type", "simple", xlinkNamespace);
-        mdRef.setAttribute("href", subFolder + filename + ".xml", xlinkNamespace);
+        mdRef.setAttribute("href", metadataFolder + subFolder + filename + ".xml", xlinkNamespace);
 
         mdRef.setAttribute("SIZE", "" + StorageProvider.getInstance().getFileSize(fileName));
         mdRef.setAttribute("CREATED", StorageProvider.getInstance().getFileCreationTime(fileName));
@@ -539,8 +575,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         String creationDate = metsHdr.getAttributeValue("CREATEDATE");
         Element agent = metsHdr.getChild("agent", metsNamespace);
 
-        Element note = agent.getChild("note", metsNamespace);
-        note.setAttribute("NOTETYPE", "IDENTIFICATIONCODE", csipNamespace); // SIP14
+        //        Element note = agent.getChild("note", metsNamespace);
+        //        note.setAttribute("NOTETYPE", "IDENTIFICATIONCODE", csipNamespace); // SIP14
 
         Element noteVersion = new Element("note", metsNamespace);
         noteVersion.setAttribute("NOTETYPE", "SOFTWARE VERSION", csipNamespace); // SIP20
@@ -549,7 +585,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
         Element agent2 = new Element("agent", metsNamespace);
         agent2.setAttribute("ROLE", "CREATOR"); // SIP16
-        agent2.setAttribute("TYPE", "ORGANIZATION"); // SIP17
+        agent2.setAttribute("TYPE", "INDIVIDUAL"); // SIP17
         metsHdr.addContent(agent2);
         Element name2 = new Element("name", metsNamespace);
         name2.setText(userAgent); // SIP24
@@ -658,7 +694,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         metsRoot.setAttribute("CONTENTINFORMATIONTYPE", "MIXED", csipNamespace);
         metsRoot.setAttribute("PROFILE", "https://earksip.dilcis.eu/profile/E-ARK-SIP.xml");
         metsRoot.setAttribute("schemaLocation",
-                "http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-7.xsd http://www.loc.gov/METS/ http://www.loc.gov/standards/mets/mets.xsd",
+                "http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-7.xsd http://www.loc.gov/METS/ https://www.loc.gov/standards/mets/version112/mets.xsd",
                 xsiNamespace);
         Element metsHdr = new Element("metsHdr", metsNamespace);
         metsHdr.setAttribute("CREATEDATE", creationDate);
@@ -936,7 +972,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         for (String ns : usedPrefixes) {
             switch (ns) {
                 case "mets":
-                    sb.append(" http://www.loc.gov/METS/ http://www.loc.gov/standards/mets/mets.xsd");
+                    sb.append(" http://www.loc.gov/METS/ https://www.loc.gov/standards/mets/version112/mets.xsd");
                     break;
                 case "premis":
                     sb.append(" http://www.loc.gov/standards/premis/ http://www.loc.gov/standards/premis/v2/premis-v2-0.xsd");
@@ -948,7 +984,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                     sb.append(" http://www.loc.gov/standards/mix/ http://www.loc.gov/standards/mix/mix.xsd");
                     break;
                 case "xlink":
-                    sb.append(" http://www.w3.org/1999/xlink http://www.w3.org/XML/2008/06/xlink.xsd");
+                    sb.append(" http://www.w3.org/1999/xlink http://www.loc.gov/standards/xlink/xlink.xsd");
                     break;
                 case "csip":
                     sb.append(" https://DILCIS.eu/XML/METS/CSIPExtensionMETS https://earkcsip.dilcis.eu/schema/DILCISExtensionMETS.xsd");
@@ -960,7 +996,10 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                     break;
             }
         }
-        rootElement.setAttribute("schemaLocation", sb.toString(), xsiNamespace);
+
+        if (sb.length() > 0) {
+            rootElement.setAttribute("schemaLocation", sb.toString(), xsiNamespace);
+        }
     }
 
     /**

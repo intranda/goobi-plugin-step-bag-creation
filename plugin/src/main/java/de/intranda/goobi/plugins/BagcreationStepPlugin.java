@@ -267,9 +267,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                     // generate filegroup
                     VirtualFileGroup virt = new VirtualFileGroup(projectFileGroup.getName(), projectFileGroup.getPath(),
                             projectFileGroup.getMimetype(), projectFileGroup.getSuffix());
-
                     virt.setIgnoreConfiguredMimetypeAndSuffix(projectFileGroup.isUseOriginalFiles());
-
                     exportFilefoExport.getDigitalDocument().getFileSet().addVirtualFileGroup(virt);
                 }
             }
@@ -575,9 +573,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         String creationDate = metsHdr.getAttributeValue("CREATEDATE");
         Element agent = metsHdr.getChild("agent", metsNamespace);
 
-        //        Element note = agent.getChild("note", metsNamespace);
-        //        note.setAttribute("NOTETYPE", "IDENTIFICATIONCODE", csipNamespace); // SIP14
-
         Element noteVersion = new Element("note", metsNamespace);
         noteVersion.setAttribute("NOTETYPE", "SOFTWARE VERSION", csipNamespace); // SIP20
         noteVersion.setText(GoobiVersion.getBuildversion());
@@ -627,6 +622,9 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                     fileElement.setAttribute("CHECKSUMTYPE", "SHA-256"); // CSIP72
                     Element flocat = fileElement.getChild("FLocat", metsNamespace);
                     flocat.setAttribute("type", "simple", xlinkNamespace); // CSIP78
+
+                    flocat.setAttribute("href", "data/" + file.getFileName().toString(), xlinkNamespace); // CSIP78
+
                     //  overwrite mimetype and filename?
 
                 } else {

@@ -130,7 +130,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     private List<ProjectFileGroup> filegroups = new ArrayList<>();
 
     // organisation name
-    private String userAgent;
+    //    private String userAgent;
 
     // rights information
     private String rightsOwner;
@@ -156,6 +156,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     // manifestation metadata
     private String organizationName;
     private String organizationAddress;
+    private String organizationIdentifier;
+
     private String contactName;
     private String contactEmail;
     private String softwareName;
@@ -183,7 +185,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             group.setUseOriginalFiles(hc.getBoolean("@useOriginalFileExtension", false));
             filegroups.add(group);
         }
-        userAgent = config.getString("/userAgent", "");
+        //        userAgent = config.getString("/userAgent", "");
 
         rightsOwner = config.getString("/metsParameter/rightsOwner", "");
         rightsOwnerLogo = config.getString("/metsParameter/rightsOwnerLogo", "");
@@ -203,6 +205,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
         organizationName = config.getString("/submissionParameter/organizationName", "");
         organizationAddress = config.getString("/submissionParameter/organizationAddress", "");
+        organizationIdentifier = config.getString("/submissionParameter/organizationIdentifier", "");
         contactName = config.getString("/submissionParameter/contactName", "");
         contactEmail = config.getString("/submissionParameter/contactEmail", "");
         softwareName = config.getString("/submissionParameter/softwareName", "");
@@ -567,28 +570,59 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     }
 
     private String createUserAgent(Element mets) {
+        /*
+        <mets:agent ROLE="CREATOR" TYPE="INDIVIDUAL">
+          <mets:name />
+          <mets:note csip:NOTETYPE="IDENTIFICATIONCODE">1</mets:note>
+        </mets:agent>
+         */
+
+        // software
+
         Element metsHdr = mets.getChild("metsHdr", metsNamespace);
         metsHdr.setAttribute("OAISPACKAGETYPE", "SIP", csipNamespace); // SIP4
         metsHdr.setAttribute("RECORDSTATUS", "NEW"); // SIP3
         String creationDate = metsHdr.getAttributeValue("CREATEDATE");
         Element agent = metsHdr.getChild("agent", metsNamespace);
 
-        Element noteVersion = new Element("note", metsNamespace);
+        Element name = agent.getChild("name", metsNamespace);
+        name.setText(softwareName);
+        Element noteVersion = agent.getChild("note", metsNamespace);
         noteVersion.setAttribute("NOTETYPE", "SOFTWARE VERSION", csipNamespace); // SIP20
         noteVersion.setText(GoobiVersion.getBuildversion());
-        agent.addContent(noteVersion);
+
+
+        // organization
 
         Element agent2 = new Element("agent", metsNamespace);
-        agent2.setAttribute("ROLE", "CREATOR"); // SIP16
-        agent2.setAttribute("TYPE", "INDIVIDUAL"); // SIP17
+        agent2.setAttribute("ROLE", "CREATOR");
+        agent2.setAttribute("TYPE", "ORGANIZATION");
         metsHdr.addContent(agent2);
-        Element name2 = new Element("name", metsNamespace);
-        name2.setText(userAgent); // SIP24
-        agent2.addContent(name2);
-        Element note2 = new Element("note", metsNamespace);
-        note2.setAttribute("NOTETYPE", "IDENTIFICATIONCODE", csipNamespace); // SIP20
-        note2.setText("1");
-        agent2.addContent(note2);
+        Element organisationName = new Element("name", metsNamespace);
+        organisationName.setText(organizationName); // SIP24
+        agent2.addContent(organisationName);
+
+        Element organisationNote = new Element("note", metsNamespace);
+        organisationNote.setText(organizationAddress);
+        agent2.addContent(organisationNote);
+
+        Element identificationNote = new Element("note", metsNamespace);
+        identificationNote.setText(organizationIdentifier);
+        identificationNote.setAttribute("NOTETYPE", "IDENTIFICATIONCODE", csipNamespace); // SIP20
+        agent2.addContent(identificationNote);
+
+        // individual
+
+        Element agent3 = new Element("agent", metsNamespace);
+        agent3.setAttribute("ROLE", "CREATOR"); // SIP16
+        agent3.setAttribute("TYPE", "INDIVIDUAL"); // SIP17
+        metsHdr.addContent(agent3);
+        Element name3 = new Element("name", metsNamespace);
+        name3.setText(contactName); // SIP24
+        agent3.addContent(name3);
+        Element note3 = new Element("note", metsNamespace);
+        note3.setText(contactEmail);
+        agent3.addContent(note3);
         return creationDate;
     }
 

@@ -164,6 +164,10 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
     private SubnodeConfiguration config;
 
+    //    TODO
+    //    CSIP60
+    //    CSIP94 - CSIP116
+
     @Override
     public void initialize(Step step, String returnPath) {
         this.returnPath = returnPath;
@@ -185,7 +189,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             group.setUseOriginalFiles(hc.getBoolean("@useOriginalFileExtension", false));
             filegroups.add(group);
         }
-        //        userAgent = config.getString("/userAgent", "");
 
         rightsOwner = config.getString("/metsParameter/rightsOwner", "");
         rightsOwnerLogo = config.getString("/metsParameter/rightsOwnerLogo", "");
@@ -578,7 +581,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
          */
 
         // software
-
         Element metsHdr = mets.getChild("metsHdr", metsNamespace);
         metsHdr.setAttribute("OAISPACKAGETYPE", "SIP", csipNamespace); // SIP4
         metsHdr.setAttribute("RECORDSTATUS", "NEW"); // SIP3
@@ -591,9 +593,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         noteVersion.setAttribute("NOTETYPE", "SOFTWARE VERSION", csipNamespace); // SIP20
         noteVersion.setText(GoobiVersion.getBuildversion());
 
-
         // organization
-
         Element agent2 = new Element("agent", metsNamespace);
         agent2.setAttribute("ROLE", "CREATOR");
         agent2.setAttribute("TYPE", "ORGANIZATION");
@@ -612,7 +612,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         agent2.addContent(identificationNote);
 
         // individual
-
         Element agent3 = new Element("agent", metsNamespace);
         agent3.setAttribute("ROLE", "CREATOR"); // SIP16
         agent3.setAttribute("TYPE", "INDIVIDUAL"); // SIP17
@@ -689,10 +688,16 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         // copy files
         for (Entry<String, List<Path>> entry : files.entrySet()) {
 
-            String folderName = entry.getKey().replace("Representations/", "");
+            String folderName = entry.getKey().replace("Representations/", "").replace("Documentation/", "");
             Path sourceFolder = entry.getValue().get(0).getParent();
 
-            Path destinationFolder = Paths.get(bag.getObjectsFolder().toString(), folderName, "data");
+            Path destinationFolder = null;
+            if (entry.getKey().startsWith("Representations")) {
+                destinationFolder=  Paths.get(bag.getObjectsFolder().toString(), folderName, "data");
+            }else {
+                destinationFolder=  Paths.get(bag.getDocumentationFolder().toString(), folderName, "data");
+            }
+
             StorageProvider.getInstance().createDirectories(destinationFolder);
             StorageProvider.getInstance().copyDirectory(sourceFolder, destinationFolder);
         }
@@ -702,7 +707,9 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     private Element createFileGroupFile(Element oldMets, Element fileGrp, String creationDate) throws IOException {
         String use = fileGrp.getAttributeValue("USE");
         fileGrp.setAttribute("USE", "Data"); // replace use value
-        String fileGrpType = use.replace("Representations/", "");
+        String fileGrpType = use.replace("Representations/", "").replace("Documentation/", "");
+
+
         int numberOfFiles = 0;
         List<String> fileIdentifier = new ArrayList<>();
         for (Element file : fileGrp.getChildren("file", metsNamespace)) {
@@ -772,7 +779,13 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         Document doc = new Document();
         doc.setRootElement(metsRoot);
         Path fileName = null;
-        fileName = Paths.get(bag.getObjectsFolder().toString(), fileGrpType, "METS.xml");
+
+        if (use.startsWith("Representations")) {
+            fileName = Paths.get(bag.getObjectsFolder().toString(), fileGrpType, "METS.xml");
+        } else {
+            fileName = Paths.get(bag.getDocumentationFolder().toString(), fileGrpType, "METS.xml");
+        }
+
         StorageProvider.getInstance().createDirectories(fileName.getParent());
 
         cleanUpNamespacesAndSchemaLocation(metsRoot);

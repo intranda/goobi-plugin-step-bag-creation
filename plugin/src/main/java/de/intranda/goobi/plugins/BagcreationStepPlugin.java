@@ -80,10 +80,12 @@ import de.sub.goobi.helper.XmlTools;
 import de.sub.goobi.helper.exceptions.DAOException;
 import de.sub.goobi.helper.exceptions.SwapException;
 import de.sub.goobi.helper.files.TarUtils;
+import de.sub.goobi.metadaten.MetadatenImagesHelper;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 import net.xeoh.plugins.base.annotations.PluginImplementation;
+import ugh.dl.DigitalDocument;
 import ugh.dl.DocStruct;
 import ugh.dl.Fileformat;
 import ugh.dl.Metadata;
@@ -129,9 +131,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
     private List<ProjectFileGroup> filegroups = new ArrayList<>();
 
-    // organisation name
-    //    private String userAgent;
-
     // rights information
     private String rightsOwner;
     private String rightsOwnerLogo;
@@ -163,10 +162,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     private String softwareName;
 
     private SubnodeConfiguration config;
-
-    //    TODO
-    //    CSIP60
-    //    CSIP94 - CSIP116
 
     @Override
     public void initialize(Step step, String returnPath) {
@@ -225,8 +220,11 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             // read metadata
             Fileformat fileformat = process.readMetadataFile();
 
+            DigitalDocument dd = fileformat.getDigitalDocument();
+
+
             // find doi metadata
-            DocStruct ds = fileformat.getDigitalDocument().getLogicalDocStruct();
+            DocStruct ds = dd.getLogicalDocStruct();
             if (ds.getType().isAnchor()) {
                 ds = ds.getAllChildren().get(0);
             }
@@ -240,6 +238,21 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 // no doi found, cancel export
                 return PluginReturnValue.ERROR;
             }
+
+            DocStruct physical = dd.getPhysicalDocStruct();
+            if (physical.getAllChildren() == null || dd.getFileSet() == null || dd.getFileSet().getAllFiles().isEmpty())  {
+                // missing pagination, try to create a new one
+                MetadatenImagesHelper mih = new MetadatenImagesHelper(this.myPrefs, dd);
+                try {
+                    mih.createPagination(process, null);
+                } catch (DAOException e) {
+                    log.error(e);
+                }
+            }
+            // if pagination is still missing, we might have subfolder instead of files
+            // TODO handle subfolder in master folder
+
+            // TODO add meta.xml and meta_anchor.xml
 
             bag = new BagCreation(ConfigurationHelper.getInstance().getTemporaryFolder() + "/" + identifier.replace("/", "_"));
             bag.createIEFolder(identifier.replace("/", "_"), "representations");

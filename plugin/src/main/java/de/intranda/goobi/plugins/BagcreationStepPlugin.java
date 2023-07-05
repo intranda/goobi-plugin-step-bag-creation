@@ -20,9 +20,11 @@ package de.intranda.goobi.plugins;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 
 /**
  * This file is part of a plugin for Goobi - a Workflow tool for the support of mass digitization.
@@ -48,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
@@ -74,23 +77,28 @@ import de.sub.goobi.config.ConfigPlugins;
 import de.sub.goobi.config.ConfigurationHelper;
 import de.sub.goobi.export.download.ExportMets;
 import de.sub.goobi.helper.BagCreation;
+import de.sub.goobi.helper.NIOFileUtils;
 import de.sub.goobi.helper.StorageProvider;
 import de.sub.goobi.helper.VariableReplacer;
 import de.sub.goobi.helper.XmlTools;
 import de.sub.goobi.helper.exceptions.DAOException;
 import de.sub.goobi.helper.exceptions.SwapException;
 import de.sub.goobi.helper.files.TarUtils;
-import de.sub.goobi.metadaten.MetadatenImagesHelper;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 import net.xeoh.plugins.base.annotations.PluginImplementation;
+import ugh.dl.ContentFile;
 import ugh.dl.DigitalDocument;
 import ugh.dl.DocStruct;
+import ugh.dl.DocStructType;
 import ugh.dl.Fileformat;
 import ugh.dl.Metadata;
+import ugh.dl.MetadataType;
 import ugh.dl.Prefs;
 import ugh.dl.VirtualFileGroup;
+import ugh.exceptions.MetadataTypeNotAllowedException;
+import ugh.exceptions.TypeNotAllowedAsChildException;
 import ugh.exceptions.UGHException;
 import ugh.fileformats.mets.MetsModsImportExport;
 import ugh.fileformats.mets.RulesetExtension;
@@ -222,7 +230,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
             DigitalDocument dd = fileformat.getDigitalDocument();
 
-
             // find doi metadata
             DocStruct ds = dd.getLogicalDocStruct();
             if (ds.getType().isAnchor()) {
@@ -240,17 +247,53 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             }
 
             DocStruct physical = dd.getPhysicalDocStruct();
-            if (physical.getAllChildren() == null || dd.getFileSet() == null || dd.getFileSet().getAllFiles().isEmpty())  {
-                // missing pagination, try to create a new one
-                MetadatenImagesHelper mih = new MetadatenImagesHelper(this.myPrefs, dd);
-                try {
-                    mih.createPagination(process, null);
-                } catch (DAOException e) {
-                    log.error(e);
+            // missing pagination, try to create a new one
+            // if pagination is missing, we might have subfolder instead of files in master folder
+            try {
+                if (physical.getAllChildren() == null || dd.getFileSet() == null || dd.getFileSet().getAllFiles().isEmpty()) {
+                    Path masterfolder = Paths.get(process.getImagesOrigDirectory(false));
+                    List<Path> list = getFolderContent(masterfolder);
+                    if (!list.isEmpty()) {
+                        DocStructType docStructPage = prefs.getDocStrctTypeByName("page");
+                        MetadataType physmdt = prefs.getMetadataTypeByName("physPageNumber");
+                        MetadataType logmdt = prefs.getMetadataTypeByName("logicalPageNumber");
+                        int currentPhysicalOrder = 0;
+
+                        for (Path file : list) {
+
+                            String mimetype = NIOFileUtils.getMimeTypeFromFile(file);
+                            DocStruct dsPage = dd.createDocStruct(docStructPage);
+                            try {
+                                // physical page no
+                                physical.addChild(dsPage);
+                                Metadata mdTemp = new Metadata(physmdt);
+                                mdTemp.setValue(String.valueOf(++currentPhysicalOrder));
+                                dsPage.addMetadata(mdTemp);
+
+                                // logical page no
+                                mdTemp = new Metadata(logmdt);
+                                mdTemp.setValue("uncounted");
+
+                                dsPage.addMetadata(mdTemp);
+                                ds.addReferenceTo(dsPage, "logical_physical");
+
+                                // image name
+                                ContentFile cf = new ContentFile();
+                                cf.setMimetype(mimetype);
+                                cf.setLocation("file://" + file.toString());
+                                dsPage.addContentFile(cf);
+
+                            } catch (TypeNotAllowedAsChildException e) {
+                                log.error(e);
+                            } catch (MetadataTypeNotAllowedException e) {
+                                log.error(e);
+                            }
+                        }
+                    }
                 }
+            } catch (DAOException e) {
+                log.error(e);
             }
-            // if pagination is still missing, we might have subfolder instead of files
-            // TODO handle subfolder in master folder
 
             // TODO add meta.xml and meta_anchor.xml
 
@@ -282,7 +325,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 Path sourceFolder = getSourceFolder(projectFileGroup.getFolder());
 
                 if (sourceFolder != null && StorageProvider.getInstance().isFileExists(sourceFolder)) {
-                    files.put(projectFileGroup.getName(), StorageProvider.getInstance().listFiles(sourceFolder.toString()));
+                    files.put(projectFileGroup.getName(), getFolderContent(sourceFolder));
                     // generate filegroup
                     VirtualFileGroup virt = new VirtualFileGroup(projectFileGroup.getName(), projectFileGroup.getPath(),
                             projectFileGroup.getMimetype(), projectFileGroup.getSuffix());
@@ -706,9 +749,9 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
             Path destinationFolder = null;
             if (entry.getKey().startsWith("Representations")) {
-                destinationFolder=  Paths.get(bag.getObjectsFolder().toString(), folderName, "data");
-            }else {
-                destinationFolder=  Paths.get(bag.getDocumentationFolder().toString(), folderName, "data");
+                destinationFolder = Paths.get(bag.getObjectsFolder().toString(), folderName, "data");
+            } else {
+                destinationFolder = Paths.get(bag.getDocumentationFolder().toString(), folderName, "data");
             }
 
             StorageProvider.getInstance().createDirectories(destinationFolder);
@@ -721,7 +764,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         String use = fileGrp.getAttributeValue("USE");
         fileGrp.setAttribute("USE", "Data"); // replace use value
         String fileGrpType = use.replace("Representations/", "").replace("Documentation/", "");
-
 
         int numberOfFiles = 0;
         List<String> fileIdentifier = new ArrayList<>();
@@ -1089,4 +1131,14 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         }
     }
 
+
+
+    private List<Path> getFolderContent(Path folder) throws IOException {
+        List<Path> filesInFolder = new ArrayList<>();
+        try (Stream<Path> input = Files.find(folder, 99, (p, bfa) -> bfa.isRegularFile())) {
+            input.forEach(filesInFolder::add);
+        }
+        Collections.sort(filesInFolder);
+        return filesInFolder;
+    }
 }

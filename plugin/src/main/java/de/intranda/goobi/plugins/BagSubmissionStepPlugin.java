@@ -92,8 +92,19 @@ public class BagSubmissionStepPlugin implements IStepPluginVersion2 {
                     break;
                 }
             }
+
+            // if DOI is missing, use CatalogIDDigital
             if (identifier == null) {
-                // no doi found, cancel
+                for (Metadata md : ds.getAllMetadata()) {
+                    if ("CatalogIDDigital".equals(md.getType().getName())) {
+                        identifier = md.getValue();
+                        break;
+                    }
+                }
+            }
+
+            if (identifier == null) {
+                // no identifier found, cancel
                 return PluginReturnValue.ERROR;
             }
 

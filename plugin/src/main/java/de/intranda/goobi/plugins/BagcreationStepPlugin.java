@@ -219,7 +219,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     }
 
     @Override
-    public PluginReturnValue run() {
+    public PluginReturnValue run() { //NOSONAR
         String identifier = null;
         VariableReplacer vp = null;
         Map<String, List<Path>> files = new HashMap<>();
@@ -230,7 +230,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
             DigitalDocument dd = fileformat.getDigitalDocument();
 
-            // find doi metadata
+            // find DOI metadata
             DocStruct ds = dd.getLogicalDocStruct();
             if (ds.getType().isAnchor()) {
                 ds = ds.getAllChildren().get(0);
@@ -241,8 +241,18 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                     break;
                 }
             }
+            // if DOI is missing, use CatalogIDDigital
             if (identifier == null) {
-                // no doi found, cancel export
+                for (Metadata md : ds.getAllMetadata()) {
+                    if ("CatalogIDDigital".equals(md.getType().getName())) {
+                        identifier = md.getValue();
+                        break;
+                    }
+                }
+            }
+
+            if (identifier == null) {
+                // no identifier found, cancel export
                 return PluginReturnValue.ERROR;
             }
 
@@ -283,9 +293,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                                 cf.setLocation("file://" + file.toString());
                                 dsPage.addContentFile(cf);
 
-                            } catch (TypeNotAllowedAsChildException e) {
-                                log.error(e);
-                            } catch (MetadataTypeNotAllowedException e) {
+                            } catch (TypeNotAllowedAsChildException | MetadataTypeNotAllowedException e) {
                                 log.error(e);
                             }
                         }
@@ -1130,8 +1138,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             }
         }
     }
-
-
 
     private List<Path> getFolderContent(Path folder) throws IOException {
         List<Path> filesInFolder = new ArrayList<>();

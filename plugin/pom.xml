@@ -40,7 +40,7 @@
     <dependency>
       <groupId>de.intranda.ugh</groupId>
       <artifactId>ugh-core</artifactId>
-      <version>5.0.16-SNAPSHOT</version>
+      <version>5.0.14-legacy</version>
       <exclusions>
         <exclusion>
           <groupId>poi</groupId>

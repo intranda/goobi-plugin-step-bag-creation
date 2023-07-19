@@ -117,7 +117,7 @@ public class BagcreationPluginTest {
         assertEquals(4, StorageProvider.getInstance().listFiles(descriptiveMetadataFolder.toString()).size());
 
         Element fileSec = mets.getChild("fileSec", metsNamespace);
-        assertEquals(2, fileSec.getChildren().size());
+        assertEquals(3, fileSec.getChildren().size());
 
         // expect a zip file
         Path tarFile = Paths.get(processDirectory.getAbsolutePath(), "10.33510_nls.js.1511270477762.tar");

@@ -97,8 +97,6 @@ import ugh.dl.Metadata;
 import ugh.dl.MetadataType;
 import ugh.dl.Prefs;
 import ugh.dl.VirtualFileGroup;
-import ugh.exceptions.MetadataTypeNotAllowedException;
-import ugh.exceptions.TypeNotAllowedAsChildException;
 import ugh.exceptions.UGHException;
 import ugh.fileformats.mets.MetsModsImportExport;
 import ugh.fileformats.mets.RulesetExtension;
@@ -259,51 +257,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             DocStruct physical = dd.getPhysicalDocStruct();
             // missing pagination, try to create a new one
             // if pagination is missing, we might have subfolder instead of files in master folder
-            try {
-                if (physical.getAllChildren() == null || dd.getFileSet() == null || dd.getFileSet().getAllFiles().isEmpty()) {
-                    Path masterfolder = Paths.get(process.getImagesOrigDirectory(false));
-                    List<Path> list = getFolderContent(masterfolder);
-                    if (!list.isEmpty()) {
-                        DocStructType docStructPage = prefs.getDocStrctTypeByName("page");
-                        MetadataType physmdt = prefs.getMetadataTypeByName("physPageNumber");
-                        MetadataType logmdt = prefs.getMetadataTypeByName("logicalPageNumber");
-                        int currentPhysicalOrder = 0;
 
-                        for (Path file : list) {
-
-                            String mimetype = NIOFileUtils.getMimeTypeFromFile(file);
-                            DocStruct dsPage = dd.createDocStruct(docStructPage);
-                            try {
-                                // physical page no
-                                physical.addChild(dsPage);
-                                Metadata mdTemp = new Metadata(physmdt);
-                                mdTemp.setValue(String.valueOf(++currentPhysicalOrder));
-                                dsPage.addMetadata(mdTemp);
-
-                                // logical page no
-                                mdTemp = new Metadata(logmdt);
-                                mdTemp.setValue("uncounted");
-
-                                dsPage.addMetadata(mdTemp);
-                                ds.addReferenceTo(dsPage, "logical_physical");
-
-                                // image name
-                                ContentFile cf = new ContentFile();
-                                cf.setMimetype(mimetype);
-                                cf.setLocation("file://" + file.toString());
-                                dsPage.addContentFile(cf);
-
-                            } catch (TypeNotAllowedAsChildException | MetadataTypeNotAllowedException e) {
-                                log.error(e);
-                            }
-                        }
-                    }
-                }
-            } catch (DAOException e) {
-                log.error(e);
-            }
-
-            // TODO add meta.xml and meta_anchor.xml
+            createPagination(dd, ds, physical);
 
             bag = new BagCreation(ConfigurationHelper.getInstance().getTemporaryFolder() + "/" + identifier.replace("/", "_"));
             bag.createIEFolder(identifier.replace("/", "_"), "representations");
@@ -341,6 +296,30 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                     exportFilefoExport.getDigitalDocument().getFileSet().addVirtualFileGroup(virt);
                 }
             }
+            // add a filegroup for original data
+            VirtualFileGroup virt = new VirtualFileGroup("Other/metadata", "other/metadata", "application/xml", "xml");
+            virt.setIgnoreConfiguredMimetypeAndSuffix(true);
+            exportFilefoExport.getDigitalDocument().getFileSet().addVirtualFileGroup(virt);
+
+            // copy meta.xml and meta_anchor.xml
+
+            Path otherMetadataFolder = Paths.get(bag.getOtherFolder().toString(), "metadata", "data");
+            Path metaFile = Paths.get(process.getMetadataFilePath());
+            Path metaAnchorFile = Paths.get(process.getMetadataFilePath().replace(".xml", "_anchor.xml"));
+            List<Path> metadataFiles = new ArrayList<>();
+            StorageProvider.getInstance().createDirectories(otherMetadataFolder);
+            if (StorageProvider.getInstance().isFileExists(metaFile)) {
+                Path destination = Paths.get(otherMetadataFolder.toString(),"meta.xml");
+                StorageProvider.getInstance().copyFile(metaFile, destination);
+                metadataFiles.add(destination);
+            }
+            if (StorageProvider.getInstance().isFileExists(metaAnchorFile)) {
+                Path destination = Paths.get(otherMetadataFolder.toString(), "meta_anchor.xml");
+                StorageProvider.getInstance().copyFile(metaAnchorFile, destination);
+                metadataFiles.add(destination);
+            }
+
+            files.put("Other/metadata", metadataFiles);
 
             // project parameter
             setProjectParameter(identifier, vp, exportFilefoExport);
@@ -400,6 +379,48 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             StorageProvider.getInstance().deleteDir(folder);
         }
         return PluginReturnValue.FINISH;
+    }
+
+    private void createPagination(DigitalDocument dd, DocStruct ds, DocStruct physical) {
+        try {
+            if (physical.getAllChildren() == null || dd.getFileSet() == null || dd.getFileSet().getAllFiles().isEmpty()) {
+                Path masterfolder = Paths.get(process.getImagesOrigDirectory(false));
+                List<Path> list = getFolderContent(masterfolder);
+                if (!list.isEmpty()) {
+                    DocStructType docStructPage = prefs.getDocStrctTypeByName("page");
+                    MetadataType physmdt = prefs.getMetadataTypeByName("physPageNumber");
+                    MetadataType logmdt = prefs.getMetadataTypeByName("logicalPageNumber");
+                    int currentPhysicalOrder = 0;
+
+                    for (Path file : list) {
+
+                        String mimetype = NIOFileUtils.getMimeTypeFromFile(file);
+                        DocStruct dsPage = dd.createDocStruct(docStructPage);
+
+                        // physical page no
+                        physical.addChild(dsPage);
+                        Metadata mdTemp = new Metadata(physmdt);
+                        mdTemp.setValue(String.valueOf(++currentPhysicalOrder));
+                        dsPage.addMetadata(mdTemp);
+
+                        // logical page no
+                        mdTemp = new Metadata(logmdt);
+                        mdTemp.setValue("uncounted");
+
+                        dsPage.addMetadata(mdTemp);
+                        ds.addReferenceTo(dsPage, "logical_physical");
+
+                        // image name
+                        ContentFile cf = new ContentFile();
+                        cf.setMimetype(mimetype);
+                        cf.setLocation("file://" + file.toString());
+                        dsPage.addContentFile(cf);
+                    }
+                }
+            }
+        } catch (DAOException | IOException | SwapException | UGHException e) {
+            log.error(e);
+        }
     }
 
     private void createBag() {
@@ -758,7 +779,9 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             Path destinationFolder = null;
             if (entry.getKey().startsWith("Representations")) {
                 destinationFolder = Paths.get(bag.getObjectsFolder().toString(), folderName, "data");
-            } else {
+            } else if (entry.getKey().startsWith("Other")) {
+                continue;
+            }else {
                 destinationFolder = Paths.get(bag.getDocumentationFolder().toString(), folderName, "data");
             }
 
@@ -771,7 +794,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     private Element createFileGroupFile(Element oldMets, Element fileGrp, String creationDate) throws IOException {
         String use = fileGrp.getAttributeValue("USE");
         fileGrp.setAttribute("USE", "Data"); // replace use value
-        String fileGrpType = use.replace("Representations/", "").replace("Documentation/", "");
+        String fileGrpType = use.replace("Representations/", "").replace("Documentation/", "").replace("Other/", "");
 
         int numberOfFiles = 0;
         List<String> fileIdentifier = new ArrayList<>();
@@ -845,8 +868,11 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
         if (use.startsWith("Representations")) {
             fileName = Paths.get(bag.getObjectsFolder().toString(), fileGrpType, "METS.xml");
-        } else {
+        } else if (use.startsWith("Documentation")) {
             fileName = Paths.get(bag.getDocumentationFolder().toString(), fileGrpType, "METS.xml");
+        } else {
+            //other
+            fileName = Paths.get(bag.getOtherFolder().toString(), fileGrpType, "METS.xml");
         }
 
         StorageProvider.getInstance().createDirectories(fileName.getParent());

@@ -220,7 +220,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     public PluginReturnValue run() { //NOSONAR
         String identifier = null;
         VariableReplacer vp = null;
-        Map<String, List<Path>> files = new HashMap<>();
+        Map<String, FileList> files = new HashMap<>();
 
         try {
             // read metadata
@@ -288,7 +288,13 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 Path sourceFolder = getSourceFolder(projectFileGroup.getFolder());
 
                 if (sourceFolder != null && StorageProvider.getInstance().isFileExists(sourceFolder)) {
-                    files.put(projectFileGroup.getName(), getFolderContent(sourceFolder));
+
+                    FileList fl = new FileList();
+                    fl.setFileGroupName(projectFileGroup.getName());
+                    fl.setSourceFolder(sourceFolder);
+                    fl.setFiles(getFolderContent(sourceFolder));
+
+                    files.put(projectFileGroup.getName(), fl);
                     // generate filegroup
                     VirtualFileGroup virt = new VirtualFileGroup(projectFileGroup.getName(), projectFileGroup.getPath(),
                             projectFileGroup.getMimetype(), projectFileGroup.getSuffix());
@@ -319,7 +325,11 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 metadataFiles.add(destination);
             }
 
-            files.put("Other/metadata", metadataFiles);
+            FileList metadata = new FileList();
+            metadata.setFileGroupName("Other/metadata");
+            metadata.setSourceFolder(metaFile.getParent());
+            metadata.setFiles(metadataFiles);
+            files.put("Other/metadata", metadata);
 
             // project parameter
             setProjectParameter(identifier, vp, exportFilefoExport);
@@ -710,7 +720,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         return creationDate;
     }
 
-    private void changeFileSec(Map<String, List<Path>> files, Element mets, String creationDate) throws IOException {
+    private void changeFileSec(Map<String,FileList> files, Element mets, String creationDate) throws IOException {
         Element fileSec = mets.getChild("fileSec", metsNamespace);
         fileSec.setAttribute("ID", "uuid-" + UUID.randomUUID().toString()); // CSIP59
 
@@ -720,8 +730,9 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             fileGrp.setAttribute("ID", "uuid-" + UUID.randomUUID().toString());
 
             String name = fileGrp.getAttributeValue("USE");
-            List<Path> filesInFolder = files.get(name);
-
+            FileList fl = files.get(name);
+            List<Path> filesInFolder = fl.getFiles();
+            String sourceFolderName = fl.getSourceFolder().toString();
             // remove filegrp if file list is empty
             if (filesInFolder.isEmpty()) {
                 filegroupsToDelete.add(fileGrp);
@@ -733,6 +744,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 Element fileElement = filesInXml.get(i);
                 if (filesInFolder.size() > i) {
                     Path file = filesInFolder.get(i);
+                    String filename = file.toString().replace(sourceFolderName, "");
                     // checksum, filesize, changedate
                     fileElement.setAttribute("SIZE", "" + StorageProvider.getInstance().getFileSize(file)); // CSIP69
                     fileElement.setAttribute("CREATED", StorageProvider.getInstance().getFileCreationTime(file)); // CSIP70
@@ -740,11 +752,11 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                     fileElement.setAttribute("CHECKSUMTYPE", "SHA-256"); // CSIP72
                     Element flocat = fileElement.getChild("FLocat", metsNamespace);
                     flocat.setAttribute("type", "simple", xlinkNamespace); // CSIP78
-
-                    flocat.setAttribute("href", "data/" + file.getFileName().toString(), xlinkNamespace); // CSIP78
-
-                    //  overwrite mimetype and filename?
-
+                    if (fl.getFileGroupName().equals("Other/metadata")) {
+                        flocat.setAttribute("href", "data/" + file.getFileName().toString(), xlinkNamespace); // CSIP78
+                    } else {
+                        flocat.setAttribute("href", "data" + filename, xlinkNamespace); // CSIP78
+                    }
                 } else {
                     // if actual filesize is smaller than filegroup size, remove superfluous files
                     filesToDelete.add(fileElement);
@@ -771,10 +783,10 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         }
 
         // copy files
-        for (Entry<String, List<Path>> entry : files.entrySet()) {
+        for (Entry<String, FileList> entry : files.entrySet()) {
 
             String folderName = entry.getKey().replace("Representations/", "").replace("Documentation/", "");
-            Path sourceFolder = entry.getValue().get(0).getParent();
+            Path sourceFolder = entry.getValue().getSourceFolder();
 
             Path destinationFolder = null;
             if (entry.getKey().startsWith("Representations")) {

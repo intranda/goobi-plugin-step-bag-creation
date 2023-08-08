@@ -558,7 +558,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         List<Element> structMaps = mets.getChildren("structMap", metsNamespace);
         for (Element structMap : structMaps) {
             if ("LOGICAL".equals(structMap.getAttributeValue("TYPE"))) {
-                logicalElements.add(structMap);
                 getAllDivElements(logicalElements, structMap);
             }
         }

@@ -113,6 +113,9 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     private static final Namespace dvNamespace = Namespace.getNamespace("dv", "http://dfg-viewer.de/");
     private static final Namespace xsiNamespace = Namespace.getNamespace("xsi", "http://www.w3.org/2001/XMLSchema-instance");
 
+    //TODO mets_anchor verschieben in other/
+    //TODO anchor daten integrieren
+
     private static final long serialVersionUID = 211912948222450125L;
     @Getter
     private String title = "intranda_step_bagcreation";
@@ -315,7 +318,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             List<Path> metadataFiles = new ArrayList<>();
             StorageProvider.getInstance().createDirectories(otherMetadataFolder);
             if (StorageProvider.getInstance().isFileExists(metaFile)) {
-                Path destination = Paths.get(otherMetadataFolder.toString(),"meta.xml");
+                Path destination = Paths.get(otherMetadataFolder.toString(), "meta.xml");
                 StorageProvider.getInstance().copyFile(metaFile, destination);
                 metadataFiles.add(destination);
             }
@@ -719,7 +722,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         return creationDate;
     }
 
-    private void changeFileSec(Map<String,FileList> files, Element mets, String creationDate) throws IOException {
+    private void changeFileSec(Map<String, FileList> files, Element mets, String creationDate) throws IOException {
         Element fileSec = mets.getChild("fileSec", metsNamespace);
         fileSec.setAttribute("ID", "uuid-" + UUID.randomUUID().toString()); // CSIP59
 
@@ -751,7 +754,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                     fileElement.setAttribute("CHECKSUMTYPE", "SHA-256"); // CSIP72
                     Element flocat = fileElement.getChild("FLocat", metsNamespace);
                     flocat.setAttribute("type", "simple", xlinkNamespace); // CSIP78
-                    if (fl.getFileGroupName().equals("Other/metadata")) {
+                    if ("Other/metadata".equals(fl.getFileGroupName())) {
                         flocat.setAttribute("href", "data/" + file.getFileName().toString(), xlinkNamespace); // CSIP78
                     } else {
                         flocat.setAttribute("href", "data" + filename, xlinkNamespace); // CSIP78
@@ -792,7 +795,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 destinationFolder = Paths.get(bag.getObjectsFolder().toString(), folderName, "data");
             } else if (entry.getKey().startsWith("Other")) {
                 continue;
-            }else {
+            } else {
                 destinationFolder = Paths.get(bag.getDocumentationFolder().toString(), folderName, "data");
             }
 
@@ -1143,7 +1146,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         }
 
         if (sb.length() > 0) {
-            rootElement.setAttribute("schemaLocation", sb.toString(), xsiNamespace);
+            rootElement.setAttribute("schemaLocation", sb.toString().trim(), xsiNamespace);
         }
     }
 

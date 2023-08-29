@@ -566,6 +566,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         }
         Element mainElement = dmdSecs.get(0);
         mainElement.setAttribute("ID", "MODS");
+        mainElement.setAttribute("ADMID", "RIGHTS DIGIPROV");
         logicalElements.get(0).setAttribute("DMDID", "MODS");
 
         for (Element dmdSec : dmdSecs) {
@@ -755,6 +756,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                     Element flocat = fileElement.getChild("FLocat", metsNamespace);
                     flocat.setAttribute("type", "simple", xlinkNamespace); // CSIP78
                     if ("Other/metadata".equals(fl.getFileGroupName())) {
+                        fileElement.setAttribute("MIMETYPE", "text/xml");
                         flocat.setAttribute("href", "data/" + file.getFileName().toString(), xlinkNamespace); // CSIP78
                     } else {
                         flocat.setAttribute("href", "data" + filename, xlinkNamespace); // CSIP78

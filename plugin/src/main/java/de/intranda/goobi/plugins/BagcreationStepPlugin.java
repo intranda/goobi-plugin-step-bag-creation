@@ -303,13 +303,13 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 }
             }
             // add a filegroup for original data
-            VirtualFileGroup virt = new VirtualFileGroup("Other/metadata", "other/metadata", "application/xml", "xml");
+            VirtualFileGroup virt = new VirtualFileGroup("Other", "other", "application/xml", "xml");
             virt.setIgnoreConfiguredMimetypeAndSuffix(true);
             exportFilefoExport.getDigitalDocument().getFileSet().addVirtualFileGroup(virt);
 
             // copy meta.xml and meta_anchor.xml
 
-            Path otherMetadataFolder = Paths.get(bag.getOtherFolder().toString(), "metadata", "data");
+            Path otherMetadataFolder = Paths.get(bag.getOtherFolder().toString());
             Path metaFile = Paths.get(process.getMetadataFilePath());
             Path metaAnchorFile = Paths.get(process.getMetadataFilePath().replace(".xml", "_anchor.xml"));
             List<Path> metadataFiles = new ArrayList<>();
@@ -326,10 +326,10 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             }
 
             FileList metadata = new FileList();
-            metadata.setFileGroupName("Other/metadata");
+            metadata.setFileGroupName("Other");
             metadata.setSourceFolder(metaFile.getParent());
             metadata.setFiles(metadataFiles);
-            files.put("Other/metadata", metadata);
+            files.put("Other", metadata);
 
             // project parameter
             setProjectParameter(identifier, vp, exportFilefoExport);
@@ -340,7 +340,9 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             // check if anchor exists
             Path anchorFile = Paths.get(bag.getIeFolder().toString(), "/METS_anchor.xml");
             if (StorageProvider.getInstance().isFileExists(anchorFile)) {
-                changeAnchorFile(otherMetadataFolder, anchorFile);
+                Path destination = Paths.get(otherMetadataFolder.toString(), "METS_anchor.xml");
+                changeAnchorFile(destination, anchorFile);
+                metadataFiles.add(destination);
             }
 
         } catch (UGHException | IOException | SwapException e) {
@@ -398,7 +400,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         return PluginReturnValue.FINISH;
     }
 
-    private void changeAnchorFile(Path otherMetadataFolder, Path anchorFile) {
+    private void changeAnchorFile(Path destinationAnchorFile, Path anchorFile) {
         try {
             // open file
             Document anchorDoc = XmlTools.getSAXBuilder().build(anchorFile.toString());
@@ -441,9 +443,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             xmlOut.output(anchorDoc, fos);
             fos.close();
 
-            // move anchor file to other/metadata/data/METS_anchor.xml
-            Path destination = Paths.get(otherMetadataFolder.toString(), "METS_anchor.xml");
-            StorageProvider.getInstance().move(anchorFile, destination);
+            // move anchor file to other/METS_anchor.xml
+            StorageProvider.getInstance().move(anchorFile, destinationAnchorFile);
 
         } catch (IOException | JDOMException e) {
             log.error(e);
@@ -623,11 +624,11 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         Element mainElement = dmdSecs.get(0);
         Element topElement = logicalElements.get(0);
         // check if we have an anchor element, first sub element is mets:mptr
-        if (topElement.getChildren() != null) {
+        if (!topElement.getChildren().isEmpty()) {
             Element subElement = topElement.getChildren().get(0);
             if ("mptr".equals(subElement.getName())) {
                 // update anchor link
-                subElement.setAttribute("href", "other/metadata/data/METS_anchor.xml", xlinkNamespace);
+                subElement.setAttribute("href", "other/METS_anchor.xml", xlinkNamespace);
                 topElement = topElement.getChildren().get(1);
             }
         }
@@ -808,33 +809,73 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 filegroupsToDelete.add(fileGrp);
                 continue;
             }
-            List<Element> filesToDelete = new ArrayList<>();
-            List<Element> filesInXml = fileGrp.getChildren("file", metsNamespace);
-            for (int i = 0; i < filesInXml.size(); i++) {
-                Element fileElement = filesInXml.get(i);
-                if (filesInFolder.size() > i) {
-                    Path file = filesInFolder.get(i);
-                    String filename = file.toString().replace(sourceFolderName, "");
+            if (name.startsWith("Representations")) {
+                List<Element> filesToDelete = new ArrayList<>();
+                List<Element> filesInXml = fileGrp.getChildren("file", metsNamespace);
+                for (int i = 0; i < filesInXml.size(); i++) {
+                    Element fileElement = filesInXml.get(i);
+                    if (filesInFolder.size() > i) {
+                        Path file = filesInFolder.get(i);
+                        String filename = file.toString().replace(sourceFolderName, "");
+                        // checksum, filesize, changedate
+                        fileElement.setAttribute("SIZE", "" + StorageProvider.getInstance().getFileSize(file)); // CSIP69
+                        fileElement.setAttribute("CREATED", StorageProvider.getInstance().getFileCreationTime(file)); // CSIP70
+                        fileElement.setAttribute("CHECKSUM", StorageProvider.getInstance().createSha256Checksum(file)); // CSIP71
+                        fileElement.setAttribute("CHECKSUMTYPE", "SHA-256"); // CSIP72
+                        Element flocat = fileElement.getChild("FLocat", metsNamespace);
+                        flocat.setAttribute("type", "simple", xlinkNamespace); // CSIP78
+                        flocat.setAttribute("href", "data" + filename, xlinkNamespace); // CSIP78
+                    } else {
+                        // if actual filesize is smaller than filegroup size, remove superfluous files
+                        filesToDelete.add(fileElement);
+                    }
+                }
+                for (Element file : filesToDelete) {
+                    fileGrp.removeContent(file);
+                }
+
+                // create separate file for each fileGrp, create link to the file with mdRef (CSIP76 - SIP35)
+                Element clone = fileGrp.clone();
+
+                Element file = createFileGroupFile(mets, clone, creationDate);
+
+                fileGrp.removeContent();
+                fileGrp.addContent(file);
+
+            } else {
+
+                // clear existing files in filegrp
+                fileGrp.removeContent();
+
+                // for each file add a new file
+
+                for (Path file : filesInFolder) {
+
+                    Element fileElement = new Element("file", metsNamespace);
                     // checksum, filesize, changedate
+                    fileElement.setAttribute("ID", "uuid-" + UUID.randomUUID().toString());
                     fileElement.setAttribute("SIZE", "" + StorageProvider.getInstance().getFileSize(file)); // CSIP69
                     fileElement.setAttribute("CREATED", StorageProvider.getInstance().getFileCreationTime(file)); // CSIP70
                     fileElement.setAttribute("CHECKSUM", StorageProvider.getInstance().createSha256Checksum(file)); // CSIP71
                     fileElement.setAttribute("CHECKSUMTYPE", "SHA-256"); // CSIP72
-                    Element flocat = fileElement.getChild("FLocat", metsNamespace);
+
+                    Element flocat = new Element("FLocat", metsNamespace);
+
+                    String filename = file.toString().replace(sourceFolderName, "");
+
+                    flocat.setAttribute("LOCTYPE", "URL");
                     flocat.setAttribute("type", "simple", xlinkNamespace); // CSIP78
-                    if ("Other/metadata".equals(fl.getFileGroupName())) {
+                    if ("Other".equals(name)) {
                         fileElement.setAttribute("MIMETYPE", "text/xml");
-                        flocat.setAttribute("href", "data/" + file.getFileName().toString(), xlinkNamespace); // CSIP78
+                        flocat.setAttribute("href", "other/" + file.getFileName().toString(), xlinkNamespace); // CSIP78
                     } else {
+                        String mimetype = NIOFileUtils.getMimeTypeFromFile(file);
+                        fileElement.setAttribute("MIMETYPE", mimetype);
                         flocat.setAttribute("href", "data" + filename, xlinkNamespace); // CSIP78
                     }
-                } else {
-                    // if actual filesize is smaller than filegroup size, remove superfluous files
-                    filesToDelete.add(fileElement);
+                    fileElement.addContent(flocat);
+                    fileGrp.addContent(fileElement);
                 }
-            }
-            for (Element file : filesToDelete) {
-                fileGrp.removeContent(file);
             }
         }
 
@@ -842,16 +883,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             fileSec.removeContent(fileGroup);
         }
 
-        // create separate file for each fileGrp, create link to the file with mdRef (CSIP76 - SIP35)
-        for (Element fileGrp : fileSec.getChildren("fileGrp", metsNamespace)) {
-
-            Element clone = fileGrp.clone();
-
-            Element file = createFileGroupFile(mets, clone, creationDate);
-
-            fileGrp.removeContent();
-            fileGrp.addContent(file);
-        }
 
         // copy files
         for (Entry<String, FileList> entry : files.entrySet()) {

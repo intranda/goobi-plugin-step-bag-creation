@@ -336,6 +336,13 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
             // save file
             exportFilefoExport.write(bag.getIeFolder().toString() + "/METS.xml");
+
+            // check if anchor exists
+            Path anchorFile = Paths.get(bag.getIeFolder().toString(), "/METS_anchor.xml");
+            if (StorageProvider.getInstance().isFileExists(anchorFile)) {
+                changeAnchorFile(otherMetadataFolder, anchorFile);
+            }
+
         } catch (UGHException | IOException | SwapException e) {
             log.error(e);
         }
@@ -356,7 +363,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             // enhance dmdSecs
             String dmdIds = changeDmdSecs(mets, creationDate);
 
-            String amdId = changeAmdSec(mets, creationDate);
+            String amdId = changeAmdSec(mets, creationDate, "");
 
             changeFileSec(files, mets, creationDate);
 
@@ -389,6 +396,58 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             StorageProvider.getInstance().deleteDir(folder);
         }
         return PluginReturnValue.FINISH;
+    }
+
+    private void changeAnchorFile(Path otherMetadataFolder, Path anchorFile) {
+        try {
+            // open file
+            Document anchorDoc = XmlTools.getSAXBuilder().build(anchorFile.toString());
+            Element mets = anchorDoc.getRootElement();
+            Element logicalDiv = mets.getChild("structMap", metsNamespace).getChild("div", metsNamespace);
+            Element mptr = logicalDiv.getChild("div", metsNamespace).getChild("mptr", metsNamespace);
+
+            String creationDate = createUserAgent(mets);
+
+            // amdSec
+            changeAmdSec(mets, creationDate, "-anchor");
+
+            // change dmdSec
+            Element dmdSec = mets.getChild("dmdSec", metsNamespace);
+            String dmdSecId = "MODS-" + dmdSec.getAttributeValue("ID");
+            dmdSec.setAttribute("ID", dmdSecId);
+            logicalDiv.setAttribute("DMDID", dmdSecId);
+            dmdSec.setAttribute("CREATED", creationDate); // CSIP19
+            dmdSec.setAttribute("STATUS", "CURRENT"); // CSIP20
+
+            // get mods element
+            Element mdWrap = dmdSec.getChild("mdWrap", metsNamespace);
+            Element xmlData = mdWrap.getChild("xmlData", metsNamespace);
+            Element mods = xmlData.getChild("mods", modsNamespace);
+            // create deep copy
+            Element copy = mods.clone();
+
+            // create external file, remove content from dmdSec, add file reference to dmdSec,
+            Element mdRef = createMetadataFile(copy, "metadata/", "descriptive/", dmdSecId,
+                    "http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-7.xsd");
+            dmdSec.removeContent(mdWrap);
+            dmdSec.addContent(mdRef);
+
+            // update link in structMap
+            mptr.setAttribute("href", "../../../METS.xml", xlinkNamespace);
+
+            // save new file
+            XMLOutputter xmlOut = new XMLOutputter(Format.getPrettyFormat());
+            FileOutputStream fos = new FileOutputStream(anchorFile.toFile());
+            xmlOut.output(anchorDoc, fos);
+            fos.close();
+
+            // move anchor file to other/metadata/data/METS_anchor.xml
+            Path destination = Paths.get(otherMetadataFolder.toString(), "METS_anchor.xml");
+            StorageProvider.getInstance().move(anchorFile, destination);
+
+        } catch (IOException | JDOMException e) {
+            log.error(e);
+        }
     }
 
     private void createPagination(DigitalDocument dd, DocStruct ds, DocStruct physical) {
@@ -496,7 +555,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         }
     }
 
-    private String changeAmdSec(Element mets, String creationDate) {
+    private String changeAmdSec(Element mets, String creationDate, String suffix) {
 
         Element amdSec = mets.getChild("amdSec", metsNamespace); // CSIP31
         String id = "";
@@ -514,7 +573,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 // create deep copy
                 Element copy = links.clone();
                 try {
-                    Element mdRef = createMetadataFile(copy, "metadata/", "other/", "DIGIPROV", "");
+                    Element mdRef = createMetadataFile(copy, "metadata/", "other/", "DIGIPROV" + suffix, "");
                     mdRef.setAttribute("MDTYPE", "OTHER");
                     mdRef.setAttribute("OTHERMDTYPE", "DVLINKS");
 
@@ -537,7 +596,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 // create deep copy
                 Element copy = rights.clone();
                 try {
-                    Element mdRef = createMetadataFile(copy, "metadata/", "other/", "DVRIGHTS", "");
+                    Element mdRef = createMetadataFile(copy, "metadata/", "other/", "DVRIGHTS" + suffix, "");
                     mdRef.setAttribute("MDTYPE", "OTHER");
                     mdRef.setAttribute("OTHERMDTYPE", "DVRIGHTS");
                     rightsMD.removeContent(mdWrap);
@@ -562,24 +621,20 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             }
         }
         Element mainElement = dmdSecs.get(0);
-        Element topElement =  logicalElements.get(0);
+        Element topElement = logicalElements.get(0);
         // check if we have an anchor element, first sub element is mets:mptr
         if (topElement.getChildren() != null) {
             Element subElement = topElement.getChildren().get(0);
-            if ("mptr".equals( subElement.getName())) {
+            if ("mptr".equals(subElement.getName())) {
                 // update anchor link
-                subElement.setAttribute("href","other/metadata/data/METS_anchor.xml",xlinkNamespace);
+                subElement.setAttribute("href", "other/metadata/data/METS_anchor.xml", xlinkNamespace);
                 topElement = topElement.getChildren().get(1);
-
-                // TODO move anchor file, open file, manipulate it, update link to main mets file
             }
         }
 
         mainElement.setAttribute("ID", "MODS");
         topElement.setAttribute("ADMID", "RIGHTS DIGIPROV");
         topElement.setAttribute("DMDID", "MODS");
-
-
 
         for (Element dmdSec : dmdSecs) {
             String dmdSecId = dmdSec.getAttributeValue("ID");

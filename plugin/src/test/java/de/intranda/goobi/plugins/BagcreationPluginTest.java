@@ -113,8 +113,8 @@ public class BagcreationPluginTest {
         assertEquals("10.33510/nls.js.1511270477762", mets.getAttributeValue("OBJID"));
 
         Path descriptiveMetadataFolder = Paths.get( plugin.getBag().getMetadataFolder().toString(), "/descriptive");
-        // created 4 files for DMDLOG_0001 to DMDLOG_0001
-        assertEquals(4, StorageProvider.getInstance().listFiles(descriptiveMetadataFolder.toString()).size());
+        // created 5 files for DMDLOG
+        assertEquals(5, StorageProvider.getInstance().listFiles(descriptiveMetadataFolder.toString()).size());
 
         Element fileSec = mets.getChild("fileSec", metsNamespace);
         assertEquals(3, fileSec.getChildren().size());

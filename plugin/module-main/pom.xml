@@ -6,9 +6,9 @@
     <dest.folder>/opt/digiverso/goobi/plugins/step/</dest.folder>
   </properties>
   <parent>
-    <groupId>de.intranda.goobi.plugins.step</groupId>
-    <artifactId>bagcreation</artifactId>
-    <version>23.06-SNAPSHOT</version>
+	  <groupId>de.intranda.goobi.plugins.step</groupId>
+	  <artifactId>bagcreation</artifactId>
+	  <version>23.07.3</version>
   </parent>
   <build>
     <finalName>${jar.name}</finalName>

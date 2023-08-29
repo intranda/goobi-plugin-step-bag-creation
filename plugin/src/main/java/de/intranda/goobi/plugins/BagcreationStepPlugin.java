@@ -113,9 +113,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     private static final Namespace dvNamespace = Namespace.getNamespace("dv", "http://dfg-viewer.de/");
     private static final Namespace xsiNamespace = Namespace.getNamespace("xsi", "http://www.w3.org/2001/XMLSchema-instance");
 
-    //TODO mets_anchor verschieben in other/
-    //TODO anchor daten integrieren
-
     private static final long serialVersionUID = 211912948222450125L;
     @Getter
     private String title = "intranda_step_bagcreation";
@@ -565,9 +562,24 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             }
         }
         Element mainElement = dmdSecs.get(0);
+        Element topElement =  logicalElements.get(0);
+        // check if we have an anchor element, first sub element is mets:mptr
+        if (topElement.getChildren() != null) {
+            Element subElement = topElement.getChildren().get(0);
+            if ("mptr".equals( subElement.getName())) {
+                // update anchor link
+                subElement.setAttribute("href","other/metadata/data/METS_anchor.xml",xlinkNamespace);
+                topElement = topElement.getChildren().get(1);
+
+                // TODO move anchor file, open file, manipulate it, update link to main mets file
+            }
+        }
+
         mainElement.setAttribute("ID", "MODS");
-        mainElement.setAttribute("ADMID", "RIGHTS DIGIPROV");
-        logicalElements.get(0).setAttribute("DMDID", "MODS");
+        topElement.setAttribute("ADMID", "RIGHTS DIGIPROV");
+        topElement.setAttribute("DMDID", "MODS");
+
+
 
         for (Element dmdSec : dmdSecs) {
             String dmdSecId = dmdSec.getAttributeValue("ID");

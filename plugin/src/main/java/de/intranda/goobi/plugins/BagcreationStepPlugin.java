@@ -293,7 +293,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                     fl.setFileGroupName(projectFileGroup.getName());
                     fl.setSourceFolder(sourceFolder);
                     fl.setFiles(getFolderContent(sourceFolder));
-
+                    fl.setMimetype(projectFileGroup.getMimetype());
+                    fl.setUseOrigFileExtension(projectFileGroup.isUseOriginalFiles());
                     files.put(projectFileGroup.getName(), fl);
                     // generate filegroup
                     VirtualFileGroup virt = new VirtualFileGroup(projectFileGroup.getName(), projectFileGroup.getPath(),
@@ -869,9 +870,14 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                         fileElement.setAttribute("MIMETYPE", "text/xml");
                         flocat.setAttribute("href", "other/" + file.getFileName().toString(), xlinkNamespace); // CSIP78
                     } else {
-                        String mimetype = NIOFileUtils.getMimeTypeFromFile(file);
+                        String mimetype;
+                        if (fl.isUseOrigFileExtension()) {
+                            mimetype = NIOFileUtils.getMimeTypeFromFile(file);
+                        } else {
+                            mimetype = fl.getMimetype();
+                        }
                         fileElement.setAttribute("MIMETYPE", mimetype);
-                        flocat.setAttribute("href", "data" + filename, xlinkNamespace); // CSIP78
+                        flocat.setAttribute("href", fl.getSourceFolder() + filename, xlinkNamespace); // CSIP78
                     }
                     fileElement.addContent(flocat);
                     fileGrp.addContent(fileElement);
@@ -882,7 +888,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         for (Element fileGroup : filegroupsToDelete) {
             fileSec.removeContent(fileGroup);
         }
-
 
         // copy files
         for (Entry<String, FileList> entry : files.entrySet()) {
@@ -896,7 +901,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             } else if (entry.getKey().startsWith("Other")) {
                 continue;
             } else {
-                destinationFolder = Paths.get(bag.getDocumentationFolder().toString(), folderName, "data");
+                destinationFolder = Paths.get(bag.getDocumentationFolder().toString());
             }
 
             StorageProvider.getInstance().createDirectories(destinationFolder);

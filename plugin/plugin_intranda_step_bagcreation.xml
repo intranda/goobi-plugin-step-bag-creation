@@ -13,13 +13,15 @@
         <step>*</step>
         <filegroups>
             <group folder="master" fileGrpName="Representations/master" prefix="data/" suffix="tif"
-                mimeType="image/tiff" />
+                mimeType="image/tiff" useOriginalFileExtension="true"/>
             <group folder="xml" fileGrpName="Representations/ocr-alto" prefix="data/" suffix="xml"
-                mimeType="text/xml" />
+                mimeType="text/xml" useOriginalFileExtension="true"/>
             <group folder="txt" fileGrpName="Representations/ocr-txt" prefix="data/" suffix="txt"
-                mimeType="text/plain" />
+                mimeType="text/plain" useOriginalFileExtension="true"/>
             <group folder="pdf" fileGrpName="Representations/pdf" prefix="data/" suffix="pdf"
-                mimeType="application/pdf" />
+                mimeType="application/pdf" useOriginalFileExtension="true"/>
+            <group folder="docs" fileGrpName="Documentation" prefix="documentation/" suffix="msg"
+                mimeType="application/vnd.ms-outlook" useOriginalFileExtension="false"/>
         </filegroups>
 
         <metsParameter>

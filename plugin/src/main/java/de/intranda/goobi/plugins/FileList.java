@@ -17,4 +17,8 @@ public class FileList {
 
     private List<Path> files = new ArrayList<>();
 
+    private boolean useOrigFileExtension;
+
+    private String mimetype;
+
 }

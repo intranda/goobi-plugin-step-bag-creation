@@ -48,6 +48,7 @@
             <contactName>Contact-Name</contactName>
             <contactEmail>Contact-Email</contactEmail>
             <softwareName>Goobi</softwareName>
+            <profileIdentifier>https://obvsg.at/lza/bagit-obvsg-v1.0.json</profileIdentifier>            
         </submissionParameter>
 
         <connection>

@@ -163,6 +163,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     private String organizationAddress;
     private String organizationIdentifier;
 
+    private String profileIdentifier;
+
     private String contactName;
     private String contactEmail;
     private String softwareName;
@@ -213,6 +215,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         contactName = config.getString("/submissionParameter/contactName", "");
         contactEmail = config.getString("/submissionParameter/contactEmail", "");
         softwareName = config.getString("/submissionParameter/softwareName", "");
+        profileIdentifier = config.getString("/submissionParameter/profileIdentifier", "");
 
     }
 
@@ -381,7 +384,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             xmlOut.output(doc, fos);
             fos.close();
 
-            createBag();
+            createBag(identifier);
 
         } catch (JDOMException | IOException e) {
             log.error(e);
@@ -494,14 +497,15 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         }
     }
 
-    private void createBag() {
+    private void createBag(String identifier) {
         bag.addMetadata("Source-Organization", organizationName);
         bag.addMetadata("Organization-Address", organizationAddress);
         bag.addMetadata("Contact-Name", contactName);
         bag.addMetadata("Contact-Email", contactEmail);
         bag.addMetadata("Bagging-Software", softwareName);
         bag.addMetadata("Process-ID", String.valueOf(process.getId()));
-
+        bag.addMetadata("External-Identifier", identifier);
+        bag.addMetadata("BagIt-Profile-Identifier", profileIdentifier);
         try {
             bag.addMetadata("Bag-Size", "" + StorageProvider.getInstance().getDirectorySize(bag.getIeFolder()));
         } catch (IOException e) {
@@ -881,7 +885,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                             mimetype = fl.getMimetype();
                         }
                         fileElement.setAttribute("MIMETYPE", mimetype);
-                        flocat.setAttribute("href", fl.getSourceFolder() + filename, xlinkNamespace); // CSIP78
+                        flocat.setAttribute("href", fl.getFileGroupName().toLowerCase() + filename, xlinkNamespace); // CSIP78
                     }
                     fileElement.addContent(flocat);
                     fileGrp.addContent(fileElement);

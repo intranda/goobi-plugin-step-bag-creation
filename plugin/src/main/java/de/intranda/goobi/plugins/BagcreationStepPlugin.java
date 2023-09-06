@@ -366,11 +366,11 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             // enhance dmdSecs
             String dmdIds = changeDmdSecs(mets, creationDate);
 
-            String amdId = changeAmdSec(mets, creationDate, "");
+            changeAmdSec(mets, creationDate, "");
 
             changeFileSec(files, mets, creationDate);
 
-            changeStructMap(mets, identifier, dmdIds, amdId);
+            changeStructMap(mets, identifier, dmdIds);
 
             removeStructLinks(mets);
 
@@ -514,7 +514,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         mets.removeChild("structLink", metsNamespace);
     }
 
-    private void changeStructMap(Element mets, String identifier, String dmdIds, String amdId) {
+    private void changeStructMap(Element mets, String identifier, String dmdIds) {
         List<Element> structMaps = mets.getChildren("structMap", metsNamespace);
         for (Element structMap : structMaps) {
             if ("PHYSICAL".equals(structMap.getAttributeValue("TYPE"))) {
@@ -530,7 +530,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 metadataDiv.setAttribute("LABEL", "Metadata"); // CSIP88
                 metadataDiv.setAttribute("ID", "uuid-" + UUID.randomUUID().toString());
                 metadataDiv.setAttribute("DMDID", dmdIds);
-                metadataDiv.setAttribute("ADMID", amdId);
+                metadataDiv.setAttribute("ADMID", "RIGHTS DIGIPROV");
 
                 physSequence.addContent(metadataDiv);
 
@@ -545,24 +545,29 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                     div.setAttribute("ID", "uuid-" + UUID.randomUUID().toString());
                     div.setAttribute("LABEL", fileGroupLabel);
                     physSequence.addContent(div);
+                    if(fileGroupLabel.startsWith("Representations")) {
+                        Element mptr = new Element("mptr", metsNamespace);
+                        mptr.setAttribute("type", "simple", xlinkNamespace);
+                        mptr.setAttribute("href", href, xlinkNamespace);
+                        mptr.setAttribute("title", fileGroupId, xlinkNamespace);
+                        mptr.setAttribute("LOCTYPE", "URL");
+                        div.addContent(mptr);
 
-                    Element mptr = new Element("mptr", metsNamespace);
-                    mptr.setAttribute("type", "simple", xlinkNamespace);
-                    mptr.setAttribute("href", href, xlinkNamespace);
-                    mptr.setAttribute("title", fileGroupId, xlinkNamespace);
-                    mptr.setAttribute("LOCTYPE", "URL");
-                    div.addContent(mptr);
+                    }else {
+                        Element fptr = new Element("fptr", metsNamespace);
+                        fptr.setAttribute("FILEID", fileGroupId);
+                        div.addContent(fptr);
+
+                    }
                 }
             }
         }
     }
 
-    private String changeAmdSec(Element mets, String creationDate, String suffix) {
+    private void changeAmdSec(Element mets, String creationDate, String suffix) {
 
         Element amdSec = mets.getChild("amdSec", metsNamespace); // CSIP31
-        String id = "";
         if (amdSec != null) {
-            id = amdSec.getAttributeValue("ID");
 
             Element digiprovMD = amdSec.getChild("digiprovMD", metsNamespace);
             if (digiprovMD != null) {
@@ -608,7 +613,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 }
             }
         }
-        return id;
     }
 
     private String changeDmdSecs(Element mets, String creationDate) {

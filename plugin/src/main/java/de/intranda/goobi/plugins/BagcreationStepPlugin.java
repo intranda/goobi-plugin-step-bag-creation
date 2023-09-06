@@ -341,14 +341,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             // save file
             exportFilefoExport.write(bag.getIeFolder().toString() + "/METS.xml");
 
-            // check if anchor exists
-            Path anchorFile = Paths.get(bag.getIeFolder().toString(), "/METS_anchor.xml");
-            if (StorageProvider.getInstance().isFileExists(anchorFile)) {
-                Path destination = Paths.get(otherMetadataFolder.toString(), "METS_anchor.xml");
-                changeAnchorFile(destination, anchorFile);
-                metadataFiles.add(destination);
-            }
-
         } catch (UGHException | IOException | SwapException e) {
             log.error(e);
         }
@@ -363,19 +355,30 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             mets.setAttribute("PROFILE", "https://earksip.dilcis.eu/profile/E-ARK-SIP.xml"); // SIP2
             mets.setAttribute("CONTENTINFORMATIONTYPE", "MIXED", csipNamespace); // CSIP4
 
+            // check if anchor exists
+            Path anchorFile = Paths.get(bag.getIeFolder().toString(), "/METS_anchor.xml");
+            boolean anchorFileExists = false;
+            if (StorageProvider.getInstance().isFileExists(anchorFile)) {
+                changeAnchorFile(anchorFile);
+                anchorFileExists = true;
+                StorageProvider.getInstance().deleteFile(anchorFile);
+            }
+
             // enhance existing agent, add additional user agent for submitting agent (SIP4 - SIP 31)
             String creationDate = createUserAgent(mets);
 
             // enhance dmdSecs
             String dmdIds = changeDmdSecs(mets, creationDate);
 
-            changeAmdSec(mets, creationDate, "");
+            changeAmdSec(mets, creationDate, "", anchorFileExists);
 
             changeFileSec(files, mets, creationDate);
 
             changeStructMap(mets, identifier, dmdIds);
 
             removeStructLinks(mets);
+
+
 
             cleanUpNamespacesAndSchemaLocation(mets);
             // save enhanced file
@@ -404,7 +407,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         return PluginReturnValue.FINISH;
     }
 
-    private void changeAnchorFile(Path destinationAnchorFile, Path anchorFile) {
+    private void changeAnchorFile(Path anchorFile) {
         try {
             // open file
             Document anchorDoc = XmlTools.getSAXBuilder().build(anchorFile.toString());
@@ -415,7 +418,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             String creationDate = createUserAgent(mets);
 
             // amdSec
-            changeAmdSec(mets, creationDate, "-anchor");
+            changeAmdSec(mets, creationDate, "-anchor", false);
 
             // change dmdSec
             Element dmdSec = mets.getChild("dmdSec", metsNamespace);
@@ -441,14 +444,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             // update link in structMap
             mptr.setAttribute("href", "../../../METS.xml", xlinkNamespace);
 
-            // save new file
-            XMLOutputter xmlOut = new XMLOutputter(Format.getPrettyFormat());
-            FileOutputStream fos = new FileOutputStream(anchorFile.toFile());
-            xmlOut.output(anchorDoc, fos);
-            fos.close();
-
-            // move anchor file to other/METS_anchor.xml
-            StorageProvider.getInstance().move(anchorFile, destinationAnchorFile);
 
         } catch (IOException | JDOMException e) {
             log.error(e);
@@ -568,7 +563,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         }
     }
 
-    private void changeAmdSec(Element mets, String creationDate, String suffix) {
+    private void changeAmdSec(Element mets, String creationDate, String suffix, boolean anchorFileExists) {
 
         Element amdSec = mets.getChild("amdSec", metsNamespace); // CSIP31
         if (amdSec != null) {
@@ -616,6 +611,20 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                     log.error(e);
                 }
             }
+
+            if (anchorFileExists) {
+                // TODO add entries for DIGIPROV-anchor and DVRIGHTS-anchor
+                /*
+                <mets:rightsMD ID="RIGHTS-anchor" STATUS="CURRENT" CREATED="2023-08-30T09:14:33Z">
+                <mets:mdRef ID="uuid-cc5d1c99-3d89-4be6-bd03-e62b67bc14ef" LOCTYPE="URL" MDTYPE="OTHER" MIMETYPE="text/xml" CHECKSUMTYPE="SHA-256" xlink:type="simple" xlink:href="metadata/other/DVRIGHTS-anchor.xml" SIZE="483" CREATED="2023-08-30T09:14:33.605271Z" CHECKSUM="C36AAE5FB621DB11FCC2839D45E42D4DDC695D9536DD61ADB2B20B3E8698A0F4" OTHERMDTYPE="DVRIGHTS" />
+              </mets:rightsMD>
+
+
+              <mets:digiprovMD ID="DIGIPROV-anchor" STATUS="CURRENT" CREATED="2023-08-30T09:14:33Z">
+              <mets:mdRef ID="uuid-09f796a3-277f-470b-8ac8-6eef27c951c4" LOCTYPE="URL" MDTYPE="OTHER" MIMETYPE="text/xml" CHECKSUMTYPE="SHA-256" xlink:type="simple" xlink:href="metadata/other/DIGIPROV.xml" SIZE="329" CREATED="2023-08-30T09:14:33.609271Z" CHECKSUM="EFAD87D92F1B37D1BA9E1DA17F24820A2A9C1DD3F0D455EE446024F48BDA6DB4" OTHERMDTYPE="DVLINKS" />
+            </mets:digiprovMD>
+                 */
+            }
         }
     }
 
@@ -632,13 +641,44 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         }
         Element mainElement = dmdSecs.get(0);
         Element topElement = logicalElements.get(0);
+
+        Element anchorDmdSec = null;
         // check if we have an anchor element, first sub element is mets:mptr
         if (!topElement.getChildren().isEmpty()) {
             Element subElement = topElement.getChildren().get(0);
             if ("mptr".equals(subElement.getName())) {
-                // update anchor link
-                subElement.setAttribute("href", "other/METS_anchor.xml", xlinkNamespace);
-                topElement = topElement.getChildren().get(1);
+                //  remove mptr
+                topElement.setAttribute("ADMID", "RIGHTS-anchor DIGIPROV-anchor");
+                topElement.setAttribute("DMDID", "MODS-DMDLOG_0000");
+                topElement.setAttribute("ID", "LOG_0000");
+                topElement.removeContent(subElement);
+                topElement = topElement.getChildren().get(0);
+
+
+                anchorDmdSec = new Element("dmdSec", metsNamespace);
+                anchorDmdSec.setAttribute("CREATED", creationDate);
+                anchorDmdSec.setAttribute("STATUS", "CURRENT");
+                anchorDmdSec.setAttribute("ID", "MODS-DMDLOG_0000");
+                Element mdRef = new Element("mdRef", metsNamespace);
+                mdRef.setAttribute("ID", "uuid-" + UUID.randomUUID().toString());
+                mdRef.setAttribute("LOCTYPE", "URL");
+                mdRef.setAttribute("MDTYPE", "MODS");
+                mdRef.setAttribute("MIMETYPE", "text/xml");
+                mdRef.setAttribute("CHECKSUMTYPE", "SHA-256");
+                mdRef.setAttribute("type", "simple", xlinkNamespace);
+
+                String filename = "metadata/descriptive/MODS-DMDLOG_0000.xml";
+                Path file = Paths.get(bag.getIeFolder().toString(), filename);
+                mdRef.setAttribute("href", filename, xlinkNamespace);
+
+                try {
+                    mdRef.setAttribute("SIZE", "" + StorageProvider.getInstance().getFileSize(file));
+                } catch (IOException e) {
+                    log.error(e);
+                }
+                mdRef.setAttribute("CREATED", StorageProvider.getInstance().getFileCreationTime(file));
+                mdRef.setAttribute("CHECKSUM", StorageProvider.getInstance().createSha256Checksum(file));
+                anchorDmdSec.addContent(mdRef);
             }
         }
 
@@ -690,8 +730,20 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             } catch (IOException e) {
                 log.error(e);
             }
-
         }
+
+        //  add new dmdSec above amdSec
+        if (anchorDmdSec != null) {
+            for (int counter = 0; counter <mets.getChildren().size(); counter++) {
+                Element el = mets.getChildren().get(counter);
+                if (el.getName().equals("amdSec")) {
+                    mets.addContent(counter, anchorDmdSec);
+                    break;
+                }
+            }
+        }
+
+
         return ids.toString();
     }
 

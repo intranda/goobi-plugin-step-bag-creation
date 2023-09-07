@@ -378,8 +378,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
             removeStructLinks(mets);
 
-
-
             cleanUpNamespacesAndSchemaLocation(mets);
             // save enhanced file
             XMLOutputter xmlOut = new XMLOutputter(Format.getPrettyFormat());
@@ -443,7 +441,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
             // update link in structMap
             mptr.setAttribute("href", "../../../METS.xml", xlinkNamespace);
-
 
         } catch (IOException | JDOMException e) {
             log.error(e);
@@ -544,7 +541,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                     div.setAttribute("ID", "uuid-" + UUID.randomUUID().toString());
                     div.setAttribute("LABEL", fileGroupLabel);
                     physSequence.addContent(div);
-                    if(fileGroupLabel.startsWith("Representations")) {
+                    if (fileGroupLabel.startsWith("Representations")) {
                         Element mptr = new Element("mptr", metsNamespace);
                         mptr.setAttribute("type", "simple", xlinkNamespace);
                         mptr.setAttribute("href", href, xlinkNamespace);
@@ -552,7 +549,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                         mptr.setAttribute("LOCTYPE", "URL");
                         div.addContent(mptr);
 
-                    }else {
+                    } else {
                         Element fptr = new Element("fptr", metsNamespace);
                         fptr.setAttribute("FILEID", fileGroupId);
                         div.addContent(fptr);
@@ -613,17 +610,62 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             }
 
             if (anchorFileExists) {
-                // TODO add entries for DIGIPROV-anchor and DVRIGHTS-anchor
-                /*
-                <mets:rightsMD ID="RIGHTS-anchor" STATUS="CURRENT" CREATED="2023-08-30T09:14:33Z">
-                <mets:mdRef ID="uuid-cc5d1c99-3d89-4be6-bd03-e62b67bc14ef" LOCTYPE="URL" MDTYPE="OTHER" MIMETYPE="text/xml" CHECKSUMTYPE="SHA-256" xlink:type="simple" xlink:href="metadata/other/DVRIGHTS-anchor.xml" SIZE="483" CREATED="2023-08-30T09:14:33.605271Z" CHECKSUM="C36AAE5FB621DB11FCC2839D45E42D4DDC695D9536DD61ADB2B20B3E8698A0F4" OTHERMDTYPE="DVRIGHTS" />
-              </mets:rightsMD>
+                // add entries for DIGIPROV-anchor and DVRIGHTS-anchor
+                String filename = "metadata/other/DVRIGHTS-anchor.xml";
+                Path file = Paths.get(bag.getIeFolder().toString(), filename);
+                if (StorageProvider.getInstance().isFileExists(file)) {
+                    Element anchorRightsMD = new Element("rightsMD", metsNamespace);
+                    anchorRightsMD.setAttribute("ID", "RIGHTS-anchor");
+                    anchorRightsMD.setAttribute("STATUS", "CURRENT");
+                    anchorRightsMD.setAttribute("CREATED", creationDate);
 
+                    Element mdRef = new  Element("mdRef", metsNamespace);
+                    mdRef.setAttribute("ID", "uuid-" + UUID.randomUUID().toString());
+                    mdRef.setAttribute("LOCTYPE", "URL");
+                    mdRef.setAttribute("MDTYPE", "OTHER");
+                    mdRef.setAttribute("MIMETYPE", "text/xml");
+                    mdRef.setAttribute("CHECKSUMTYPE", "SHA-256");
+                    mdRef.setAttribute("type", "simple", xlinkNamespace);
+                    mdRef.setAttribute("href", filename, xlinkNamespace);
+                    mdRef.setAttribute("OTHERMDTYPE", "DVRIGHTS");
+                    try {
+                        mdRef.setAttribute("SIZE", "" + StorageProvider.getInstance().getFileSize(file));
+                    } catch (IOException e) {
+                        log.error(e);
+                    }
+                    mdRef.setAttribute("CREATED", StorageProvider.getInstance().getFileCreationTime(file));
+                    mdRef.setAttribute("CHECKSUM", StorageProvider.getInstance().createSha256Checksum(file));
+                    anchorRightsMD.addContent(mdRef);
+                    amdSec.addContent(1, anchorRightsMD);
+                }
 
-              <mets:digiprovMD ID="DIGIPROV-anchor" STATUS="CURRENT" CREATED="2023-08-30T09:14:33Z">
-              <mets:mdRef ID="uuid-09f796a3-277f-470b-8ac8-6eef27c951c4" LOCTYPE="URL" MDTYPE="OTHER" MIMETYPE="text/xml" CHECKSUMTYPE="SHA-256" xlink:type="simple" xlink:href="metadata/other/DIGIPROV.xml" SIZE="329" CREATED="2023-08-30T09:14:33.609271Z" CHECKSUM="EFAD87D92F1B37D1BA9E1DA17F24820A2A9C1DD3F0D455EE446024F48BDA6DB4" OTHERMDTYPE="DVLINKS" />
-            </mets:digiprovMD>
-                 */
+                filename = "metadata/other/DIGIPROV-anchor.xml";
+                file = Paths.get(bag.getIeFolder().toString(), filename);
+                if (StorageProvider.getInstance().isFileExists(file)) {
+                    Element anchorRightsMD = new Element("digiprovMD", metsNamespace);
+                    anchorRightsMD.setAttribute("ID", "DIGIPROV-anchor");
+                    anchorRightsMD.setAttribute("STATUS", "CURRENT");
+                    anchorRightsMD.setAttribute("CREATED", creationDate);
+
+                    Element mdRef = new  Element("mdRef", metsNamespace);
+                    mdRef.setAttribute("ID", "uuid-" + UUID.randomUUID().toString());
+                    mdRef.setAttribute("LOCTYPE", "URL");
+                    mdRef.setAttribute("MDTYPE", "OTHER");
+                    mdRef.setAttribute("MIMETYPE", "text/xml");
+                    mdRef.setAttribute("CHECKSUMTYPE", "SHA-256");
+                    mdRef.setAttribute("type", "simple", xlinkNamespace);
+                    mdRef.setAttribute("href", filename, xlinkNamespace);
+                    mdRef.setAttribute("OTHERMDTYPE", "DVRIGHTS");
+                    try {
+                        mdRef.setAttribute("SIZE", "" + StorageProvider.getInstance().getFileSize(file));
+                    } catch (IOException e) {
+                        log.error(e);
+                    }
+                    mdRef.setAttribute("CREATED", StorageProvider.getInstance().getFileCreationTime(file));
+                    mdRef.setAttribute("CHECKSUM", StorageProvider.getInstance().createSha256Checksum(file));
+                    anchorRightsMD.addContent(mdRef);
+                    amdSec.addContent(amdSec.getChildren().size(), anchorRightsMD);
+                }
             }
         }
     }
@@ -653,7 +695,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 topElement.setAttribute("ID", "LOG_0000");
                 topElement.removeContent(subElement);
                 topElement = topElement.getChildren().get(0);
-
 
                 anchorDmdSec = new Element("dmdSec", metsNamespace);
                 anchorDmdSec.setAttribute("CREATED", creationDate);
@@ -734,7 +775,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
         //  add new dmdSec above amdSec
         if (anchorDmdSec != null) {
-            for (int counter = 0; counter <mets.getChildren().size(); counter++) {
+            for (int counter = 0; counter < mets.getChildren().size(); counter++) {
                 Element el = mets.getChildren().get(counter);
                 if (el.getName().equals("amdSec")) {
                     mets.addContent(counter, anchorDmdSec);
@@ -742,7 +783,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 }
             }
         }
-
 
         return ids.toString();
     }

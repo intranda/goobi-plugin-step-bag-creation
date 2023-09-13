@@ -70,6 +70,7 @@ public class BagSubmissionStepPlugin implements IStepPluginVersion2 {
     private int port = 22;
     private String sftpPathToKnownHostsFile;
     private String sftpRemoteFolder;
+    private String localFolder;
 
     private String connectionType;
 
@@ -122,7 +123,17 @@ public class BagSubmissionStepPlugin implements IStepPluginVersion2 {
         } catch (UGHException | IOException | SwapException e) {
             log.error(e);
         }
-        if ("ftp".equalsIgnoreCase(connectionType)) {
+        if (StringUtils.isNotBlank(localFolder)) {
+
+            Path destination = Paths.get(localFolder, renamedTarFile.getFileName().toString());
+            try {
+                StorageProvider.getInstance().copyFile(renamedTarFile, destination);
+            } catch (IOException e) {
+                log.error(e);
+                return PluginReturnValue.ERROR;
+            }
+
+        } else if ("ftp".equalsIgnoreCase(connectionType)) {
             try (FtpUtils connection = new FtpUtils(userName, password, hostname, port)) {
                 // upload file
                 connection.changeRemoteFolder(sftpRemoteFolder);
@@ -196,6 +207,8 @@ public class BagSubmissionStepPlugin implements IStepPluginVersion2 {
         sftpPathToKnownHostsFile = myconfig.getString("/connection/knownHostsFile");
         port = myconfig.getInt("/connection/port");
         sftpRemoteFolder = myconfig.getString("/connection/remoteFolder");
+
+        localFolder = myconfig.getString("/exportFolder", null);
     }
 
     @Override

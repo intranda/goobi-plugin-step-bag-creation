@@ -263,7 +263,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
             createPagination(dd, ds, physical);
 
-            bag = new BagCreation(ConfigurationHelper.getInstance().getTemporaryFolder() + "/" + identifier.replace("/", "_"));
+            bag = new BagCreation(
+                    ConfigurationHelper.getInstance().getTemporaryFolder() + "/" + identifier.replace("/", "_") + "/" + identifier.replace("/", "_"));
             bag.createIEFolder(identifier.replace("/", "_"), "representations");
 
             vp = new VariableReplacer(fileformat.getDigitalDocument(), prefs, process, null);
@@ -392,14 +393,14 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         }
 
         try {
-            TarUtils.createTar(bag.getBagitRoot(), Paths.get(process.getProcessDataDirectory(), identifier.replace("/", "_") + ".tar"));
+            TarUtils.createTar(bag.getBagitRoot().getParent(), Paths.get(process.getProcessDataDirectory(), identifier.replace("/", "_") + ".tar"));
         } catch (IOException | SwapException e) {
             log.error(e);
         }
 
         // clean up temporary files after file was created
         if (!keepTempFiles) {
-            Path folder = bag.getBagitRoot();
+            Path folder = bag.getBagitRoot().getParent();
             StorageProvider.getInstance().deleteDir(folder);
         }
         return PluginReturnValue.FINISH;
@@ -619,7 +620,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                     anchorRightsMD.setAttribute("STATUS", "CURRENT");
                     anchorRightsMD.setAttribute("CREATED", creationDate);
 
-                    Element mdRef = new  Element("mdRef", metsNamespace);
+                    Element mdRef = new Element("mdRef", metsNamespace);
                     mdRef.setAttribute("ID", "uuid-" + UUID.randomUUID().toString());
                     mdRef.setAttribute("LOCTYPE", "URL");
                     mdRef.setAttribute("MDTYPE", "OTHER");
@@ -647,7 +648,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                     anchorRightsMD.setAttribute("STATUS", "CURRENT");
                     anchorRightsMD.setAttribute("CREATED", creationDate);
 
-                    Element mdRef = new  Element("mdRef", metsNamespace);
+                    Element mdRef = new Element("mdRef", metsNamespace);
                     mdRef.setAttribute("ID", "uuid-" + UUID.randomUUID().toString());
                     mdRef.setAttribute("LOCTYPE", "URL");
                     mdRef.setAttribute("MDTYPE", "OTHER");
@@ -777,7 +778,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         if (anchorDmdSec != null) {
             for (int counter = 0; counter < mets.getChildren().size(); counter++) {
                 Element el = mets.getChildren().get(counter);
-                if (el.getName().equals("amdSec")) {
+                if ("amdSec".equals(el.getName())) {
                     mets.addContent(counter, anchorDmdSec);
                     break;
                 }

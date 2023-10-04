@@ -499,7 +499,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         bag.addMetadata("Contact-Email", contactEmail);
         bag.addMetadata("Bagging-Software", softwareName);
         bag.addMetadata("Process-ID", String.valueOf(process.getId()));
-        bag.addMetadata("External-Identifier", identifier);
+        bag.addMetadata("External-Identifier", identifier.replace("/", "_") + "_bag");
         bag.addMetadata("BagIt-Profile-Identifier", profileIdentifier);
         try {
             bag.addMetadata("Bag-Size", "" + StorageProvider.getInstance().getDirectorySize(bag.getIeFolder()));

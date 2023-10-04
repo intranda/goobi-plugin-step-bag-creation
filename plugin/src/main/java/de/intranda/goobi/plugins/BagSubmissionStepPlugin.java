@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
-import java.util.UUID;
 
 import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.commons.lang.StringUtils;
@@ -77,8 +76,8 @@ public class BagSubmissionStepPlugin implements IStepPluginVersion2 {
     @Override
     public PluginReturnValue run() {
         String identifier = null;
+        Path tarFile = null;
         // open mets file, get doi
-        Path renamedTarFile = null;
         try {
             Fileformat fileformat = process.readMetadataFile();
 
@@ -111,23 +110,21 @@ public class BagSubmissionStepPlugin implements IStepPluginVersion2 {
 
             // check if tar file exists
 
-            Path tarFile = Paths.get(process.getProcessDataDirectory(), identifier.replace("/", "_") + ".tar");
+            tarFile = Paths.get(process.getProcessDataDirectory(), identifier.replace("/", "_") + "_bag.tar");
             //  rename file before upload
             if (!StorageProvider.getInstance().isFileExists(tarFile)) {
                 // file not found, cancel
                 return PluginReturnValue.ERROR;
             }
-            renamedTarFile = Paths.get(process.getProcessDataDirectory(), UUID.randomUUID().toString() + ".tar");
-            StorageProvider.getInstance().move(tarFile, renamedTarFile);
 
         } catch (UGHException | IOException | SwapException e) {
             log.error(e);
         }
         if (StringUtils.isNotBlank(localFolder)) {
 
-            Path destination = Paths.get(localFolder, renamedTarFile.getFileName().toString());
+            Path destination = Paths.get(localFolder, tarFile.getFileName().toString());
             try {
-                StorageProvider.getInstance().copyFile(renamedTarFile, destination);
+                StorageProvider.getInstance().copyFile(tarFile, destination);
             } catch (IOException e) {
                 log.error(e);
                 return PluginReturnValue.ERROR;
@@ -137,7 +134,7 @@ public class BagSubmissionStepPlugin implements IStepPluginVersion2 {
             try (FtpUtils connection = new FtpUtils(userName, password, hostname, port)) {
                 // upload file
                 connection.changeRemoteFolder(sftpRemoteFolder);
-                connection.uploadFile(renamedTarFile);
+                connection.uploadFile(tarFile);
             } catch (Exception e) {
                 log.error(e);
                 return PluginReturnValue.ERROR;
@@ -146,7 +143,7 @@ public class BagSubmissionStepPlugin implements IStepPluginVersion2 {
             try (SftpUtils connection = new SftpUtils(userName, password, hostname, port, sftpPathToKnownHostsFile)) {
                 // upload file
                 connection.changeRemoteFolder(sftpRemoteFolder);
-                connection.uploadFile(renamedTarFile);
+                connection.uploadFile(tarFile);
             } catch (Exception e) {
                 log.error(e);
                 return PluginReturnValue.ERROR;
@@ -155,7 +152,7 @@ public class BagSubmissionStepPlugin implements IStepPluginVersion2 {
             try (SftpUtils connection = new SftpUtils(userName, sftpKeyfile, password, hostname, port, sftpPathToKnownHostsFile)) {
                 // upload file
                 connection.changeRemoteFolder(sftpRemoteFolder);
-                connection.uploadFile(renamedTarFile);
+                connection.uploadFile(tarFile);
             } catch (Exception e) {
                 log.error(e);
                 return PluginReturnValue.ERROR;
@@ -163,7 +160,7 @@ public class BagSubmissionStepPlugin implements IStepPluginVersion2 {
         }
         // delete local zip file
         try {
-            StorageProvider.getInstance().deleteFile(renamedTarFile);
+            StorageProvider.getInstance().deleteFile(tarFile);
         } catch (IOException e) {
             log.error(e);
         }

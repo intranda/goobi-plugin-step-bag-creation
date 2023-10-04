@@ -264,7 +264,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             createPagination(dd, ds, physical);
 
             bag = new BagCreation(
-                    ConfigurationHelper.getInstance().getTemporaryFolder() + "/" + identifier.replace("/", "_") + "/" + identifier.replace("/", "_"));
+                    ConfigurationHelper.getInstance().getTemporaryFolder() + "/" + identifier.replace("/", "_") + "/" + identifier.replace("/", "_")
+                            + "_bag");
             bag.createIEFolder(identifier.replace("/", "_"), "representations");
 
             vp = new VariableReplacer(fileformat.getDigitalDocument(), prefs, process, null);
@@ -393,7 +394,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         }
 
         try {
-            TarUtils.createTar(bag.getBagitRoot().getParent(), Paths.get(process.getProcessDataDirectory(), identifier.replace("/", "_") + ".tar"));
+            TarUtils.createTar(bag.getBagitRoot().getParent(),
+                    Paths.get(process.getProcessDataDirectory(), identifier.replace("/", "_") + "_bag.tar"));
         } catch (IOException | SwapException e) {
             log.error(e);
         }

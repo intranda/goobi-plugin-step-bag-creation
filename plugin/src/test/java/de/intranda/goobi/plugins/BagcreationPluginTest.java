@@ -50,7 +50,7 @@ import ugh.fileformats.mets.MetsMods;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ MetadatenHelper.class, VariableReplacer.class, ConfigurationHelper.class, ProcessManager.class, MetadataManager.class,
-    JwtHelper.class })
+        JwtHelper.class })
 
 @PowerMockIgnore({ "javax.management.*", "javax.xml.*", "org.xml.*", "org.w3c.*", "javax.net.ssl.*", "jdk.internal.reflect.*" })
 public class BagcreationPluginTest {
@@ -112,7 +112,7 @@ public class BagcreationPluginTest {
         Element mets = doc.getRootElement();
         assertEquals("10.33510/nls.js.1511270477762", mets.getAttributeValue("OBJID"));
 
-        Path descriptiveMetadataFolder = Paths.get( plugin.getBag().getMetadataFolder().toString(), "/descriptive");
+        Path descriptiveMetadataFolder = Paths.get(plugin.getBag().getMetadataFolder().toString(), "/descriptive");
         // created 5 files for DMDLOG
         assertEquals(5, StorageProvider.getInstance().listFiles(descriptiveMetadataFolder.toString()).size());
 
@@ -120,7 +120,7 @@ public class BagcreationPluginTest {
         assertEquals(3, fileSec.getChildren().size());
 
         // expect a zip file
-        Path tarFile = Paths.get(processDirectory.getAbsolutePath(), "10.33510_nls.js.1511270477762.tar");
+        Path tarFile = Paths.get(processDirectory.getAbsolutePath(), "10.33510_nls.js.1511270477762_bag.tar");
         assertTrue(Files.exists(tarFile));
     }
 
@@ -191,8 +191,8 @@ public class BagcreationPluginTest {
         EasyMock.expect(MetadatenHelper.getMetaFileType(EasyMock.anyString())).andReturn("mets").anyTimes();
         EasyMock.expect(MetadatenHelper.getFileformatByName(EasyMock.anyString(), EasyMock.anyObject())).andReturn(ff).anyTimes();
         EasyMock.expect(MetadatenHelper.getMetadataOfFileformat(EasyMock.anyObject(), EasyMock.anyBoolean()))
-        .andReturn(Collections.emptyMap())
-        .anyTimes();
+                .andReturn(Collections.emptyMap())
+                .anyTimes();
         PowerMock.replay(MetadatenHelper.class);
 
         PowerMock.mockStatic(MetadataManager.class);

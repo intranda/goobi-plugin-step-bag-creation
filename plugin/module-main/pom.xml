@@ -2,15 +2,15 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>de.intranda.goobi.plugins.step</groupId>
   <artifactId>bagcreation-main</artifactId>
-  <version>23.08</version>
+  <version>23.10</version>
   <properties>
     <jar.name>plugin_intranda_step_bagcreation</jar.name>
     <dest.folder>/opt/digiverso/goobi/plugins/step/</dest.folder>
   </properties>
   <parent>
-	  <groupId>de.intranda.goobi.plugins.step</groupId>
-	  <artifactId>bagcreation</artifactId>
-	  <version>23.08</version>
+    <groupId>de.intranda.goobi.plugins.step</groupId>
+    <artifactId>bagcreation</artifactId>
+    <version>23.10</version>
   </parent>
   <build>
     <finalName>${jar.name}</finalName>
@@ -35,7 +35,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>2.22.1</version>
         <configuration>
-             <argLine>--add-opens=java.base/java.lang=ALL-UNNAMED</argLine>
+          <argLine>--add-opens=java.base/java.lang=ALL-UNNAMED</argLine>
           <useSystemClassLoader>false</useSystemClassLoader>
         </configuration>
       </plugin>

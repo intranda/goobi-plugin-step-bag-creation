@@ -122,9 +122,12 @@ public class BagSubmissionStepPlugin implements IStepPluginVersion2 {
         }
         if (StringUtils.isNotBlank(localFolder)) {
 
+            Path tempFile = Paths.get(localFolder, process.getTitel() + ".tmp");
+
             Path destination = Paths.get(localFolder, tarFile.getFileName().toString());
             try {
-                StorageProvider.getInstance().copyFile(tarFile, destination);
+                StorageProvider.getInstance().copyFile(tarFile, tempFile);
+                StorageProvider.getInstance().move(tempFile, destination);
             } catch (IOException e) {
                 log.error(e);
                 return PluginReturnValue.ERROR;

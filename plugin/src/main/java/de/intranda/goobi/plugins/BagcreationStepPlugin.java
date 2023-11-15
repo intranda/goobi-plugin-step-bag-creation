@@ -20,6 +20,7 @@ package de.intranda.goobi.plugins;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -928,7 +929,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                         fileElement.setAttribute("CHECKSUMTYPE", "SHA-256"); // CSIP72
                         Element flocat = fileElement.getChild("FLocat", metsNamespace);
                         flocat.setAttribute("type", "simple", xlinkNamespace); // CSIP78
-                        flocat.setAttribute("href", "data" + filename, xlinkNamespace); // CSIP78
+                        flocat.setAttribute("href", "data" + URLEncoder.encode(filename, "UTF-8").replace("%2F", "/"), xlinkNamespace); // CSIP78
                     } else {
                         // if actual filesize is smaller than filegroup size, remove superfluous files
                         filesToDelete.add(fileElement);
@@ -980,7 +981,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                             mimetype = fl.getMimetype();
                         }
                         fileElement.setAttribute("MIMETYPE", mimetype);
-                        flocat.setAttribute("href", fl.getFileGroupName().toLowerCase() + filename, xlinkNamespace); // CSIP78
+                        flocat.setAttribute("href", fl.getFileGroupName().toLowerCase() + URLEncoder.encode(filename, "UTF-8").replace("%2F", "/"),
+                                xlinkNamespace); // CSIP78
                     }
                     fileElement.addContent(flocat);
                     fileGrp.addContent(fileElement);

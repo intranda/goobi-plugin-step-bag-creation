@@ -24,7 +24,9 @@ import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 
 /**
@@ -85,6 +87,9 @@ import de.sub.goobi.helper.XmlTools;
 import de.sub.goobi.helper.exceptions.DAOException;
 import de.sub.goobi.helper.exceptions.SwapException;
 import de.sub.goobi.helper.files.TarUtils;
+import gov.loc.repository.bagit.creator.BagCreator;
+import gov.loc.repository.bagit.hash.StandardSupportedAlgorithms;
+import gov.loc.repository.bagit.hash.SupportedAlgorithm;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
@@ -266,7 +271,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
             bag = new BagCreation(
                     ConfigurationHelper.getInstance().getTemporaryFolder() + "/" + identifier.replace("/", "_") + "/" + identifier.replace("/", "_")
-                            + "_bag");
+                    + "_bag");
             bag.createIEFolder(identifier.replace("/", "_"), "representations");
 
             vp = new VariableReplacer(fileformat.getDigitalDocument(), prefs, process, null);
@@ -395,6 +400,9 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         }
 
         try {
+
+            //  bag.getBagitRoot().toString(), "data", identifier.replace("/", "_"
+
             TarUtils.createTar(bag.getBagitRoot().getParent(),
                     Paths.get(process.getProcessDataDirectory(), identifier.replace("/", "_") + "_bag.tar"));
         } catch (IOException | SwapException e) {
@@ -507,7 +515,20 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         } catch (IOException e) {
             log.error(e);
         }
-        bag.createBag();
+        //        bag.createBag();
+
+
+        StandardSupportedAlgorithms algorithm = StandardSupportedAlgorithms.SHA256;
+        boolean includeHiddenFiles = true;
+        Collection<SupportedAlgorithm> algos = new ArrayList<>();
+        algos.add(algorithm);
+
+        /* create bag */
+        try {
+            BagCreator.bagInPlace(bag.getBagitRoot(), algos, includeHiddenFiles, bag.getMetadata());
+        } catch (NoSuchAlgorithmException | IOException e) {
+            log.error(e);
+        }
     }
 
     private void removeStructLinks(Element mets) {

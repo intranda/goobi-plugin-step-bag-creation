@@ -883,7 +883,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         name.setText(softwareName);
         Element noteVersion = agent.getChild("note", metsNamespace);
         noteVersion.setAttribute("NOTETYPE", "SOFTWARE VERSION", csipNamespace); // SIP20
-        noteVersion.setText(GoobiVersion.getBuildversion());
+        noteVersion.setText(GoobiVersion.getVersion());
 
         // organization
         Element agent2 = new Element("agent", metsNamespace);

@@ -22,6 +22,8 @@
                 mimeType="application/pdf" useOriginalFileExtension="true"/>
             <group folder="docs" fileGrpName="Documentation" prefix="documentation/" suffix="msg"
                 mimeType="application/vnd.ms-outlook" useOriginalFileExtension="false"/>
+            <group folder="attachments" fileGrpName="Attachments" prefix="attachments/" suffix="pdf"
+                mimeType="application/pdf" useOriginalFileExtension="true"/>                
         </filegroups>
 
         <metsParameter>

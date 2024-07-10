@@ -24,9 +24,7 @@ import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 
 /**
@@ -87,9 +85,6 @@ import de.sub.goobi.helper.XmlTools;
 import de.sub.goobi.helper.exceptions.DAOException;
 import de.sub.goobi.helper.exceptions.SwapException;
 import de.sub.goobi.helper.files.TarUtils;
-import gov.loc.repository.bagit.creator.BagCreator;
-import gov.loc.repository.bagit.hash.StandardSupportedAlgorithms;
-import gov.loc.repository.bagit.hash.SupportedAlgorithm;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
@@ -271,7 +266,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
             bag = new BagCreation(
                     ConfigurationHelper.getInstance().getTemporaryFolder() + "/" + identifier.replace("/", "_") + "/" + identifier.replace("/", "_")
-                    + "_bag");
+                            + "_bag");
             bag.createIEFolder(identifier.replace("/", "_"), "representations");
 
             vp = new VariableReplacer(fileformat.getDigitalDocument(), prefs, process, null);
@@ -515,20 +510,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         } catch (IOException e) {
             log.error(e);
         }
-        //        bag.createBag();
-
-
-        StandardSupportedAlgorithms algorithm = StandardSupportedAlgorithms.SHA256;
-        boolean includeHiddenFiles = true;
-        Collection<SupportedAlgorithm> algos = new ArrayList<>();
-        algos.add(algorithm);
-
-        /* create bag */
-        try {
-            BagCreator.bagInPlace(bag.getBagitRoot(), algos, includeHiddenFiles, bag.getMetadata());
-        } catch (NoSuchAlgorithmException | IOException e) {
-            log.error(e);
-        }
+        bag.createBag();
     }
 
     private void removeStructLinks(Element mets) {
@@ -1018,7 +1000,7 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         // copy files
         for (Entry<String, FileList> entry : files.entrySet()) {
 
-            String folderName = entry.getKey().replace("Representations/", "").replace("Documentation/", "");
+            String folderName = entry.getKey().replace("Representations/", "").replace("Documentation/", "").replace("Attachments/", "");
             Path sourceFolder = entry.getValue().getSourceFolder();
 
             Path destinationFolder = null;
@@ -1026,6 +1008,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 destinationFolder = Paths.get(bag.getObjectsFolder().toString(), folderName, "data");
             } else if (entry.getKey().startsWith("Other")) {
                 continue;
+            } else if (entry.getKey().startsWith("Attachments")) {
+                destinationFolder = Paths.get(bag.getAttachmentsFolder().toString());
             } else {
                 destinationFolder = Paths.get(bag.getDocumentationFolder().toString());
             }
@@ -1115,6 +1099,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             fileName = Paths.get(bag.getObjectsFolder().toString(), fileGrpType, "METS.xml");
         } else if (use.startsWith("Documentation")) {
             fileName = Paths.get(bag.getDocumentationFolder().toString(), fileGrpType, "METS.xml");
+        } else if (use.startsWith("Attachment")) {
+            fileName = Paths.get(bag.getAttachmentsFolder().toString(), fileGrpType, "METS.xml");
         } else {
             //other
             fileName = Paths.get(bag.getOtherFolder().toString(), fileGrpType, "METS.xml");

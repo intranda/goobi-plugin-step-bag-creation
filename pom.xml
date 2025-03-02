@@ -3,7 +3,7 @@
   <parent>
     <groupId>io.goobi.workflow</groupId>
     <artifactId>workflow-base</artifactId>
-    <version>24.12</version>
+    <version>25.02</version>
     <relativePath />
   </parent>
   <groupId>io.goobi.workflow.plugin</groupId>
@@ -25,24 +25,6 @@
       <version>${project.version}</version>
       <classifier>classes</classifier>
     </dependency>
-    <dependency>
-      <groupId>de.intranda.ugh</groupId>
-      <artifactId>ugh-core</artifactId>
-      <version>5.0.14-legacy</version>
-      <exclusions>
-        <exclusion>
-          <groupId>poi</groupId>
-          <artifactId>poi</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>log4j</groupId>
-          <artifactId>log4j</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>bouncycastle</groupId>
-          <artifactId>bcprov-jdk14</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
+    
   </dependencies>
 </project>

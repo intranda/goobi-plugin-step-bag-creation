@@ -24,6 +24,8 @@ import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -55,16 +57,20 @@ import java.util.stream.Stream;
 
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.lang3.StringUtils;
 import org.goobi.beans.Process;
 import org.goobi.beans.Project;
 import org.goobi.beans.ProjectFileGroup;
 import org.goobi.beans.Step;
+import org.goobi.interfaces.IArchiveManagementAdministrationPlugin;
 import org.goobi.production.GoobiVersion;
 import org.goobi.production.enums.PluginGuiType;
 import org.goobi.production.enums.PluginReturnValue;
 import org.goobi.production.enums.PluginType;
 import org.goobi.production.enums.StepReturnValue;
+import org.goobi.production.plugin.PluginLoader;
+import org.goobi.production.plugin.interfaces.IPlugin;
 import org.goobi.production.plugin.interfaces.IStepPluginVersion2;
 import org.jdom2.Attribute;
 import org.jdom2.Document;
@@ -85,6 +91,7 @@ import de.sub.goobi.helper.XmlTools;
 import de.sub.goobi.helper.exceptions.DAOException;
 import de.sub.goobi.helper.exceptions.SwapException;
 import de.sub.goobi.helper.files.TarUtils;
+import de.sub.goobi.persistence.managers.MySQLHelper;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
@@ -172,6 +179,9 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
     private SubnodeConfiguration config;
 
+    private String archiveIdFieldMets;
+    private String archiveIdFieldEad;
+
     @Override
     public void initialize(Step step, String returnPath) {
         this.returnPath = returnPath;
@@ -218,12 +228,15 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         softwareName = config.getString("/submissionParameter/softwareName", "");
         profileIdentifier = config.getString("/submissionParameter/profileIdentifier", "");
 
+        archiveIdFieldMets = config.getString("/additionalMetadata/archiveIdMETS", "");
+        archiveIdFieldEad = config.getString("/additionalMetadata/archiveIdEAD", "");
     }
 
     @Override
     public PluginReturnValue run() { //NOSONAR
         String identifier = null;
         VariableReplacer vp = null;
+        String archiveId = null;
         Map<String, FileList> files = new HashMap<>();
 
         try {
@@ -256,6 +269,15 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             if (identifier == null) {
                 // no identifier found, cancel export
                 return PluginReturnValue.ERROR;
+            }
+
+            if (StringUtils.isNotBlank(archiveIdFieldMets) && StringUtils.isNotBlank(archiveIdFieldEad)) {
+                for (Metadata md : ds.getAllMetadata()) {
+                    if (archiveIdFieldMets.equals(md.getType().getName())) {
+                        archiveId = md.getValue();
+                        break;
+                    }
+                }
             }
 
             DocStruct physical = dd.getPhysicalDocStruct();
@@ -330,6 +352,35 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 Path destination = Paths.get(otherMetadataFolder.toString(), "meta_anchor.xml");
                 StorageProvider.getInstance().copyFile(metaAnchorFile, destination);
                 metadataFiles.add(destination);
+            }
+
+            if (StringUtils.isNotBlank(archiveId)) {
+                //  if archive link exists, find ead file with the linked node id
+                Path eadFile = Paths.get(otherMetadataFolder.toString(), "ead.xml");
+                String archiveEntry = findArchiveByNodeId(archiveIdFieldEad, archiveId);
+
+                // load record from database
+                IPlugin p = PluginLoader.getPluginByTitle(PluginType.Administration, "intranda_administration_archive_management");
+                IArchiveManagementAdministrationPlugin archive = (IArchiveManagementAdministrationPlugin) p;
+                archive.setDatabaseName(archiveEntry);
+                archive.loadSelectedDatabase();
+
+                //  create ead file, write it into 'other' folder
+                if (!archiveEntry.endsWith(".xml")) {
+                    archiveEntry = archiveEntry + ".xml";
+                }
+                Document document = archive.createEadFile();
+                XMLOutputter outputter = new XMLOutputter(Format.getPrettyFormat());
+
+                try {
+                    outputter.output(document, Files.newOutputStream(eadFile));
+                } catch (IOException e) {
+                    log.error(e);
+                }
+
+                // add file to filegroup
+                metadataFiles.add(eadFile);
+
             }
 
             FileList metadata = new FileList();
@@ -1404,4 +1455,22 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         Collections.sort(filesInFolder);
         return filesInFolder;
     }
+
+    private static String findArchiveByNodeId(String metadataName, String metadataValue) {
+        StringBuilder sql = new StringBuilder();
+        sql.append(
+                "select title from archive_record_group where id = (select archive_record_group_id from archive_record_node WHERE ExtractValue(data, '/xml/")
+                .append(metadataName)
+                .append("') = '")
+                .append(metadataValue)
+                .append("')");
+        try (Connection connection = MySQLHelper.getInstance().getConnection()) {
+            QueryRunner run = new QueryRunner();
+            return run.query(connection, sql.toString(), MySQLHelper.resultSetToStringHandler);
+        } catch (SQLException e) {
+            log.error(e);
+        }
+        return null;
+    }
+
 }

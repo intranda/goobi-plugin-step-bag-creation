@@ -228,7 +228,9 @@ Die Syntax ist dabei identisch zum MODS-Mapping im Regelsatz.
                     <DisplayNameXPath>./mods:displayForm</DisplayNameXPath>
                     <IdentifierXPath>../mods:name[@authority='gbv'][@ID='']</IdentifierXPath>
                 </Person>
-            </Group>            
+            </Group>
+            <archiveIdMETS>RecordID</archiveIdMETS>
+            <archiveIdEAD>recordid</archiveIdEAD>
         </additionalMetadata>
 ```
 

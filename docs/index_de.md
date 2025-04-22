@@ -234,6 +234,9 @@ Die Syntax ist dabei identisch zum MODS-Mapping im Regelsatz.
         </additionalMetadata>
 ```
 
+Sofern auch das Archiv-Management installiert ist, kann auch der zum Datensatz gehörende Bestand mit archiviert werden. Dazu muss mittels `archiveIdMETS` und `archiveIdEAD` angegeben werden, in welchen Feldern die ID des Knotens in der METS Datei und im Knoten zu finden ist. Wenn das Feld existiert, wird mit Hilfe der ID der Knoten in allen Beständen gesucht. Wurde der Knoten gefunden, wird der komplette Bestand in den `other` Ordner exportiert.
+
+
 Als letztes werden die Zugangsdaten für den SFTP-Transfer konfiguriert.
 
 ```xml

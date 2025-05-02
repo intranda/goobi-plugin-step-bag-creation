@@ -28,26 +28,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
-
-/**
- * This file is part of a plugin for Goobi - a Workflow tool for the support of mass digitization.
- *
- * Visit the websites for more information.
- *          - https://goobi.io
- *          - https://www.intranda.com
- *          - https://github.com/intranda/goobi
- *
- * This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free
- * Software Foundation; either version 2 of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 59
- * Temple Place, Suite 330, Boston, MA 02111-1307 USA
- *
- */
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,8 +35,12 @@ import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
+import org.apache.commons.configuration.XMLConfiguration;
+import org.apache.commons.configuration.reloading.FileChangedReloadingStrategy;
+import org.apache.commons.configuration.tree.xpath.XPathExpressionEngine;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.lang3.StringUtils;
 import org.goobi.beans.Process;
@@ -94,6 +78,10 @@ import de.sub.goobi.helper.exceptions.DAOException;
 import de.sub.goobi.helper.exceptions.SwapException;
 import de.sub.goobi.helper.files.TarUtils;
 import de.sub.goobi.persistence.managers.MySQLHelper;
+import io.goobi.api.job.actapro.model.ActaProApi;
+import io.goobi.api.job.actapro.model.AuthenticationToken;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
@@ -359,6 +347,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             if (StringUtils.isNotBlank(archiveId)) {
                 //  if archive link exists, find ead file with the linked node id
                 Path eadFile = Paths.get(otherMetadataFolder.toString(), "ead.xml");
+                Path jsonFile = Paths.get(otherMetadataFolder.toString(), "node.json");
+
                 String archiveEntry = findArchiveByNodeId(archiveIdFieldEad, archiveId);
 
                 // load record from database
@@ -401,6 +391,39 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                     // add file to filegroup
                     metadataFiles.add(eadFile);
                 }
+
+                // download json document from actapro
+                try {
+                    XMLConfiguration actaProConfig = new XMLConfiguration(
+                            ConfigurationHelper.getInstance().getConfigurationFolder() + "plugin_intranda_administration_actapro_sync.xml");
+                    actaProConfig.setListDelimiter('&');
+                    actaProConfig.setReloadingStrategy(new FileChangedReloadingStrategy());
+                    actaProConfig.setExpressionEngine(new XPathExpressionEngine());
+                    String authServiceUrl = actaProConfig.getString("/authentication/authServiceUrl");
+                    String authServiceHeader = actaProConfig.getString("/authentication/authServiceHeader");
+                    String authServiceUsername = actaProConfig.getString("/authentication/authServiceUsername");
+                    String authServicePassword = actaProConfig.getString("/authentication/authServicePassword");
+                    String connectorUrl = actaProConfig.getString("/connectorUrl");
+
+                    try (Client client = ClientBuilder.newClient()) {
+                        AuthenticationToken token = ActaProApi.authenticate(client, authServiceHeader, authServiceUrl, authServiceUsername,
+                                authServicePassword);
+                        String value = ActaProApi.getJsonDocumentAsString(client, token, connectorUrl, archiveId);
+                        if (StringUtils.isNotBlank(value)) {
+                            // write to file
+                            Files.write(jsonFile, value.getBytes());
+                            // add to filegrp
+                            metadataFiles.add(jsonFile);
+                        }
+                    }
+
+                } catch (ConfigurationException e) {
+                    log.error(e);
+                }
+
+                // TODO put files in /metadata/descriptive
+                // TODO new dmdSec entry in main METS.xml next to id="MODS"
+                // TODO link entry in structMap, mets:div add to DMDID
 
             }
 

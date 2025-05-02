@@ -64,6 +64,7 @@ import org.goobi.beans.Project;
 import org.goobi.beans.ProjectFileGroup;
 import org.goobi.beans.Step;
 import org.goobi.interfaces.IArchiveManagementAdministrationPlugin;
+import org.goobi.interfaces.IEadEntry;
 import org.goobi.production.GoobiVersion;
 import org.goobi.production.enums.PluginGuiType;
 import org.goobi.production.enums.PluginReturnValue;
@@ -80,6 +81,7 @@ import org.jdom2.Namespace;
 import org.jdom2.output.Format;
 import org.jdom2.output.XMLOutputter;
 
+import de.intranda.goobi.plugins.persistence.ArchiveManagementManager;
 import de.sub.goobi.config.ConfigPlugins;
 import de.sub.goobi.config.ConfigurationHelper;
 import de.sub.goobi.export.download.ExportMets;
@@ -365,21 +367,40 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 archive.setDatabaseName(archiveEntry);
                 archive.loadSelectedDatabase();
 
-                //  create ead file, write it into 'other' folder
-                if (!archiveEntry.endsWith(".xml")) {
-                    archiveEntry = archiveEntry + ".xml";
-                }
-                Document document = archive.createEadFile();
-                XMLOutputter outputter = new XMLOutputter(Format.getPrettyFormat());
+                // only store the node and its ancestors
 
-                try {
-                    outputter.output(document, Files.newOutputStream(eadFile));
-                } catch (IOException e) {
-                    log.error(e);
+                // find node in archive
+                List<Integer> nodeIds = ArchiveManagementManager.simpleSearch(archive.getRecordGroup().getId(), archiveIdFieldEad, archiveId);
+                // nodelist should contain one id
+
+                IEadEntry currentEntry = null;
+                for (IEadEntry entry : archive.getRootElement().getAllNodes()) {
+                    if (nodeIds.contains(entry.getDatabaseId())) {
+                        currentEntry = entry;
+                        break;
+                    }
                 }
 
-                // add file to filegroup
-                metadataFiles.add(eadFile);
+                if (currentEntry != null) {
+
+                    // clone node and its ancestors
+
+                    //  create ead file, write it into 'other' folder
+                    if (!archiveEntry.endsWith(".xml")) {
+                        archiveEntry = archiveEntry + ".xml";
+                    }
+                    Document document = archive.createEadFileForNodeAndAncestors(currentEntry);
+                    XMLOutputter outputter = new XMLOutputter(Format.getPrettyFormat());
+
+                    try {
+                        outputter.output(document, Files.newOutputStream(eadFile));
+                    } catch (IOException e) {
+                        log.error(e);
+                    }
+
+                    // add file to filegroup
+                    metadataFiles.add(eadFile);
+                }
 
             }
 

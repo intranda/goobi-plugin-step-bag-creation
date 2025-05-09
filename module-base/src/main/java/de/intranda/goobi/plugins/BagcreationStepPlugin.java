@@ -344,89 +344,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
                 metadataFiles.add(destination);
             }
 
-            if (StringUtils.isNotBlank(archiveId)) {
-                //  if archive link exists, find ead file with the linked node id
-                Path eadFile = Paths.get(otherMetadataFolder.toString(), "ead.xml");
-                Path jsonFile = Paths.get(otherMetadataFolder.toString(), "node.json");
-
-                String archiveEntry = findArchiveByNodeId(archiveIdFieldEad, archiveId);
-
-                // load record from database
-                IPlugin p = PluginLoader.getPluginByTitle(PluginType.Administration, "intranda_administration_archive_management");
-                IArchiveManagementAdministrationPlugin archive = (IArchiveManagementAdministrationPlugin) p;
-                archive.setDatabaseName(archiveEntry);
-                archive.loadSelectedDatabase();
-
-                // only store the node and its ancestors
-
-                // find node in archive
-                List<Integer> nodeIds = ArchiveManagementManager.simpleSearch(archive.getRecordGroup().getId(), archiveIdFieldEad, archiveId);
-                // nodelist should contain one id
-
-                IEadEntry currentEntry = null;
-                for (IEadEntry entry : archive.getRootElement().getAllNodes()) {
-                    if (nodeIds.contains(entry.getDatabaseId())) {
-                        currentEntry = entry;
-                        break;
-                    }
-                }
-
-                if (currentEntry != null) {
-
-                    // clone node and its ancestors
-
-                    //  create ead file, write it into 'other' folder
-                    if (!archiveEntry.endsWith(".xml")) {
-                        archiveEntry = archiveEntry + ".xml";
-                    }
-                    Document document = archive.createEadFileForNodeAndAncestors(currentEntry);
-                    XMLOutputter outputter = new XMLOutputter(Format.getPrettyFormat());
-
-                    try {
-                        outputter.output(document, Files.newOutputStream(eadFile));
-                    } catch (IOException e) {
-                        log.error(e);
-                    }
-
-                    // add file to filegroup
-                    metadataFiles.add(eadFile);
-                }
-
-                // download json document from actapro
-                try {
-                    XMLConfiguration actaProConfig = new XMLConfiguration(
-                            ConfigurationHelper.getInstance().getConfigurationFolder() + "plugin_intranda_administration_actapro_sync.xml");
-                    actaProConfig.setListDelimiter('&');
-                    actaProConfig.setReloadingStrategy(new FileChangedReloadingStrategy());
-                    actaProConfig.setExpressionEngine(new XPathExpressionEngine());
-                    String authServiceUrl = actaProConfig.getString("/authentication/authServiceUrl");
-                    String authServiceHeader = actaProConfig.getString("/authentication/authServiceHeader");
-                    String authServiceUsername = actaProConfig.getString("/authentication/authServiceUsername");
-                    String authServicePassword = actaProConfig.getString("/authentication/authServicePassword");
-                    String connectorUrl = actaProConfig.getString("/connectorUrl");
-
-                    try (Client client = ClientBuilder.newClient()) {
-                        AuthenticationToken token = ActaProApi.authenticate(client, authServiceHeader, authServiceUrl, authServiceUsername,
-                                authServicePassword);
-                        String value = ActaProApi.getJsonDocumentAsString(client, token, connectorUrl, archiveId);
-                        if (StringUtils.isNotBlank(value)) {
-                            // write to file
-                            Files.write(jsonFile, value.getBytes());
-                            // add to filegrp
-                            metadataFiles.add(jsonFile);
-                        }
-                    }
-
-                } catch (ConfigurationException e) {
-                    log.error(e);
-                }
-
-                // TODO put files in /metadata/descriptive
-                // TODO new dmdSec entry in main METS.xml next to id="MODS"
-                // TODO link entry in structMap, mets:div add to DMDID
-
-            }
-
             FileList metadata = new FileList();
             metadata.setFileGroupName("Other");
             metadata.setSourceFolder(metaFile.getParent());
@@ -468,6 +385,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             // enhance dmdSecs
             String dmdIds = changeDmdSecs(mets, creationDate);
 
+            dmdIds = addActaProData(mets, creationDate, archiveId, dmdIds);
+
             changeAmdSec(mets, creationDate, "", anchorFileExists);
 
             changeFileSec(files, mets, creationDate);
@@ -505,6 +424,145 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             StorageProvider.getInstance().deleteDir(folder);
         }
         return PluginReturnValue.FINISH;
+    }
+
+    private String addActaProData(Element mets, String creationDate, String archiveId, String dmdIds) throws IOException {
+        // if actapro id exists
+        if (StringUtils.isNotBlank(archiveId)) {
+
+            Path eadFile = Paths.get(bag.getMetadataFolder().toString(), "descriptive", "ead.xml");
+            Path jsonFile = Paths.get(bag.getMetadataFolder().toString(), "descriptive", "node.json");
+
+            //   find ead file with the linked node id
+            String archiveEntry = findArchiveByNodeId(archiveIdFieldEad, archiveId);
+
+            // load record from database
+            IPlugin p = PluginLoader.getPluginByTitle(PluginType.Administration, "intranda_administration_archive_management");
+            IArchiveManagementAdministrationPlugin archive = (IArchiveManagementAdministrationPlugin) p;
+            archive.setDatabaseName(archiveEntry);
+            archive.loadSelectedDatabase();
+
+            // only store the node and its ancestors
+
+            // find node in archive
+            List<Integer> nodeIds = ArchiveManagementManager.simpleSearch(archive.getRecordGroup().getId(), archiveIdFieldEad, archiveId);
+            // nodelist should contain one id
+
+            IEadEntry currentEntry = null;
+            for (IEadEntry entry : archive.getRootElement().getAllNodes()) {
+                if (nodeIds.contains(entry.getDatabaseId())) {
+                    currentEntry = entry;
+                    break;
+                }
+            }
+
+            if (currentEntry != null) {
+                //  store file
+                if (!archiveEntry.endsWith(".xml")) {
+                    archiveEntry = archiveEntry + ".xml";
+                }
+                Document document = archive.createEadFileForNodeAndAncestors(currentEntry);
+                XMLOutputter outputter = new XMLOutputter(Format.getPrettyFormat());
+                try {
+                    outputter.output(document, Files.newOutputStream(eadFile));
+                } catch (IOException e) {
+                    log.error(e);
+                }
+            }
+
+            // download json document from actapro
+            try {
+                XMLConfiguration actaProConfig = new XMLConfiguration(
+                        ConfigurationHelper.getInstance().getConfigurationFolder() + "plugin_intranda_administration_actapro_sync.xml");
+                actaProConfig.setListDelimiter('&');
+                actaProConfig.setReloadingStrategy(new FileChangedReloadingStrategy());
+                actaProConfig.setExpressionEngine(new XPathExpressionEngine());
+                String authServiceUrl = actaProConfig.getString("/authentication/authServiceUrl");
+                String authServiceHeader = actaProConfig.getString("/authentication/authServiceHeader");
+                String authServiceUsername = actaProConfig.getString("/authentication/authServiceUsername");
+                String authServicePassword = actaProConfig.getString("/authentication/authServicePassword");
+                String connectorUrl = actaProConfig.getString("/connectorUrl");
+
+                try (Client client = ClientBuilder.newClient()) {
+                    AuthenticationToken token = ActaProApi.authenticate(client, authServiceHeader, authServiceUrl, authServiceUsername,
+                            authServicePassword);
+                    String value = ActaProApi.getJsonDocumentAsString(client, token, connectorUrl, archiveId);
+                    if (StringUtils.isNotBlank(value)) {
+                        // write to file
+                        Files.write(jsonFile, value.getBytes());
+                    }
+                }
+
+            } catch (ConfigurationException e) {
+                log.error(e);
+            }
+
+            // add EAD.xml file to METS
+            String eadUuid = "uuid-" + UUID.randomUUID().toString();
+            Element eadDmd = new Element("dmdSec", metsNamespace);
+            eadDmd.setAttribute("CREATED", creationDate);
+            eadDmd.setAttribute("STATUS", "CURRENT");
+            eadDmd.setAttribute("ID", eadUuid);
+            Element mdRef = new Element("mdRef", metsNamespace);
+            mdRef.setAttribute("LOCTYPE", "URL");
+            mdRef.setAttribute("MDTYPE", "EAD");
+            mdRef.setAttribute("MDTYPEVERSION", "3");
+            mdRef.setAttribute("MIMETYPE", "text/xml");
+            mdRef.setAttribute("CHECKSUMTYPE", "SHA-256");
+
+            String filename = "metadata/descriptive/EAD.xml";
+            mdRef.setAttribute("href", filename, xlinkNamespace);
+            try {
+                mdRef.setAttribute("SIZE", "" + StorageProvider.getInstance().getFileSize(eadFile));
+            } catch (IOException e) {
+                log.error(e);
+            }
+            mdRef.setAttribute("CREATED", StorageProvider.getInstance().getFileCreationTime(eadFile));
+            mdRef.setAttribute("CHECKSUM", StorageProvider.getInstance().createSha256Checksum(eadFile));
+            eadDmd.addContent(mdRef);
+
+            for (int counter = 0; counter < mets.getChildren().size(); counter++) {
+                Element el = mets.getChildren().get(counter);
+                if ("amdSec".equals(el.getName())) {
+                    mets.addContent(counter, eadDmd);
+                    break;
+                }
+            }
+
+            // aff json file to METS
+            String jsonUuid = "uuid-" + UUID.randomUUID().toString();
+            Element jsonDmd = new Element("dmdSec", metsNamespace);
+            jsonDmd.setAttribute("CREATED", creationDate);
+            jsonDmd.setAttribute("STATUS", "CURRENT");
+            jsonDmd.setAttribute("ID", jsonUuid);
+            mdRef = new Element("mdRef", metsNamespace);
+            mdRef.setAttribute("LOCTYPE", "URL");
+            mdRef.setAttribute("MDTYPE", "EAD");
+            mdRef.setAttribute("MIMETYPE", "text/json");
+            mdRef.setAttribute("CHECKSUMTYPE", "SHA-256");
+
+            filename = "metadata/descriptive/node.json";
+            mdRef.setAttribute("href", filename, xlinkNamespace);
+            try {
+                mdRef.setAttribute("SIZE", "" + StorageProvider.getInstance().getFileSize(jsonFile));
+            } catch (IOException e) {
+                log.error(e);
+            }
+            mdRef.setAttribute("CREATED", StorageProvider.getInstance().getFileCreationTime(jsonFile));
+            mdRef.setAttribute("CHECKSUM", StorageProvider.getInstance().createSha256Checksum(jsonFile));
+            jsonDmd.addContent(mdRef);
+
+            for (int counter = 0; counter < mets.getChildren().size(); counter++) {
+                Element el = mets.getChildren().get(counter);
+                if ("amdSec".equals(el.getName())) {
+                    mets.addContent(counter, jsonDmd);
+                    break;
+                }
+            }
+
+            dmdIds = dmdIds + " " + eadUuid + " " + jsonUuid;
+        }
+        return dmdIds;
     }
 
     private void changeAnchorFile(Path anchorFile) {

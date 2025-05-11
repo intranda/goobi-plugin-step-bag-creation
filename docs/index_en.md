@@ -230,9 +230,13 @@ The syntax is identical to the MODS mapping in the rule set.
                     <DisplayNameXPath>./mods:displayForm</DisplayNameXPath>
                     <IdentifierXPath>../mods:name[@authority='gbv'][@ID='']</IdentifierXPath>
                 </Person>
-            </Group>            
+            </Group>
+            <archiveIdMETS>RecordID</archiveIdMETS>
+            <archiveIdEAD>recordid</archiveIdEAD>
         </additionalMetadata>
 ```
+
+If Archive Management is also installed, the inventory belonging to the record can also be archived. To do this, the fields in which the ID of the node can be found in the METS file and in the node must be specified using `archiveIdMETS` and `archiveIdEAD`. If the field exists, the node ID is used to search for the node in all the inventories. If the node is found, the ead file is exported to the `other` folder.
 
 The last step is to configure the access data for the SFTP transfer.
 

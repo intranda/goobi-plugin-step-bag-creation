@@ -24,28 +24,10 @@ import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
-
-/**
- * This file is part of a plugin for Goobi - a Workflow tool for the support of mass digitization.
- *
- * Visit the websites for more information.
- *          - https://goobi.io
- *          - https://www.intranda.com
- *          - https://github.com/intranda/goobi
- *
- * This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free
- * Software Foundation; either version 2 of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 59
- * Temple Place, Suite 330, Boston, MA 02111-1307 USA
- *
- */
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,18 +35,27 @@ import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.configuration.XMLConfiguration;
+import org.apache.commons.configuration.reloading.FileChangedReloadingStrategy;
+import org.apache.commons.configuration.tree.xpath.XPathExpressionEngine;
+import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.lang3.StringUtils;
 import org.goobi.beans.Process;
 import org.goobi.beans.Project;
 import org.goobi.beans.ProjectFileGroup;
 import org.goobi.beans.Step;
+import org.goobi.interfaces.IArchiveManagementAdministrationPlugin;
+import org.goobi.interfaces.IEadEntry;
 import org.goobi.production.GoobiVersion;
 import org.goobi.production.enums.PluginGuiType;
 import org.goobi.production.enums.PluginReturnValue;
 import org.goobi.production.enums.PluginType;
 import org.goobi.production.enums.StepReturnValue;
+import org.goobi.production.plugin.PluginLoader;
+import org.goobi.production.plugin.interfaces.IPlugin;
 import org.goobi.production.plugin.interfaces.IStepPluginVersion2;
 import org.jdom2.Attribute;
 import org.jdom2.Document;
@@ -74,6 +65,7 @@ import org.jdom2.Namespace;
 import org.jdom2.output.Format;
 import org.jdom2.output.XMLOutputter;
 
+import de.intranda.goobi.plugins.persistence.ArchiveManagementManager;
 import de.sub.goobi.config.ConfigPlugins;
 import de.sub.goobi.config.ConfigurationHelper;
 import de.sub.goobi.export.download.ExportMets;
@@ -85,6 +77,11 @@ import de.sub.goobi.helper.XmlTools;
 import de.sub.goobi.helper.exceptions.DAOException;
 import de.sub.goobi.helper.exceptions.SwapException;
 import de.sub.goobi.helper.files.TarUtils;
+import de.sub.goobi.persistence.managers.MySQLHelper;
+import io.goobi.api.job.actapro.model.ActaProApi;
+import io.goobi.api.job.actapro.model.AuthenticationToken;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
@@ -172,6 +169,9 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
 
     private SubnodeConfiguration config;
 
+    private String archiveIdFieldMets;
+    private String archiveIdFieldEad;
+
     @Override
     public void initialize(Step step, String returnPath) {
         this.returnPath = returnPath;
@@ -218,12 +218,15 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         softwareName = config.getString("/submissionParameter/softwareName", "");
         profileIdentifier = config.getString("/submissionParameter/profileIdentifier", "");
 
+        archiveIdFieldMets = config.getString("/additionalMetadata/archiveIdMETS", "");
+        archiveIdFieldEad = config.getString("/additionalMetadata/archiveIdEAD", "");
     }
 
     @Override
     public PluginReturnValue run() { //NOSONAR
         String identifier = null;
         VariableReplacer vp = null;
+        String archiveId = null;
         Map<String, FileList> files = new HashMap<>();
 
         try {
@@ -256,6 +259,15 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             if (identifier == null) {
                 // no identifier found, cancel export
                 return PluginReturnValue.ERROR;
+            }
+
+            if (StringUtils.isNotBlank(archiveIdFieldMets) && StringUtils.isNotBlank(archiveIdFieldEad)) {
+                for (Metadata md : ds.getAllMetadata()) {
+                    if (archiveIdFieldMets.equals(md.getType().getName())) {
+                        archiveId = md.getValue();
+                        break;
+                    }
+                }
             }
 
             DocStruct physical = dd.getPhysicalDocStruct();
@@ -373,6 +385,8 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             // enhance dmdSecs
             String dmdIds = changeDmdSecs(mets, creationDate);
 
+            dmdIds = addActaProData(mets, creationDate, archiveId, dmdIds);
+
             changeAmdSec(mets, creationDate, "", anchorFileExists);
 
             changeFileSec(files, mets, creationDate);
@@ -410,6 +424,145 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             StorageProvider.getInstance().deleteDir(folder);
         }
         return PluginReturnValue.FINISH;
+    }
+
+    private String addActaProData(Element mets, String creationDate, String archiveId, String dmdIds) throws IOException {
+        // if actapro id exists
+        if (StringUtils.isNotBlank(archiveId)) {
+
+            Path eadFile = Paths.get(bag.getMetadataFolder().toString(), "descriptive", "ead.xml");
+            Path jsonFile = Paths.get(bag.getMetadataFolder().toString(), "descriptive", "node.json");
+
+            //   find ead file with the linked node id
+            String archiveEntry = findArchiveByNodeId(archiveIdFieldEad, archiveId);
+
+            // load record from database
+            IPlugin p = PluginLoader.getPluginByTitle(PluginType.Administration, "intranda_administration_archive_management");
+            IArchiveManagementAdministrationPlugin archive = (IArchiveManagementAdministrationPlugin) p;
+            archive.setDatabaseName(archiveEntry);
+            archive.loadSelectedDatabase();
+
+            // only store the node and its ancestors
+
+            // find node in archive
+            List<Integer> nodeIds = ArchiveManagementManager.simpleSearch(archive.getRecordGroup().getId(), archiveIdFieldEad, archiveId);
+            // nodelist should contain one id
+
+            IEadEntry currentEntry = null;
+            for (IEadEntry entry : archive.getRootElement().getAllNodes()) {
+                if (nodeIds.contains(entry.getDatabaseId())) {
+                    currentEntry = entry;
+                    break;
+                }
+            }
+
+            if (currentEntry != null) {
+                //  store file
+                if (!archiveEntry.endsWith(".xml")) {
+                    archiveEntry = archiveEntry + ".xml";
+                }
+                Document document = archive.createEadFileForNodeAndAncestors(currentEntry);
+                XMLOutputter outputter = new XMLOutputter(Format.getPrettyFormat());
+                try {
+                    outputter.output(document, Files.newOutputStream(eadFile));
+                } catch (IOException e) {
+                    log.error(e);
+                }
+            }
+
+            // download json document from actapro
+            try {
+                XMLConfiguration actaProConfig = new XMLConfiguration(
+                        ConfigurationHelper.getInstance().getConfigurationFolder() + "plugin_intranda_administration_actapro_sync.xml");
+                actaProConfig.setListDelimiter('&');
+                actaProConfig.setReloadingStrategy(new FileChangedReloadingStrategy());
+                actaProConfig.setExpressionEngine(new XPathExpressionEngine());
+                String authServiceUrl = actaProConfig.getString("/authentication/authServiceUrl");
+                String authServiceHeader = actaProConfig.getString("/authentication/authServiceHeader");
+                String authServiceUsername = actaProConfig.getString("/authentication/authServiceUsername");
+                String authServicePassword = actaProConfig.getString("/authentication/authServicePassword");
+                String connectorUrl = actaProConfig.getString("/connectorUrl");
+
+                try (Client client = ClientBuilder.newClient()) {
+                    AuthenticationToken token = ActaProApi.authenticate(client, authServiceHeader, authServiceUrl, authServiceUsername,
+                            authServicePassword);
+                    String value = ActaProApi.getJsonDocumentAsString(client, token, connectorUrl, archiveId);
+                    if (StringUtils.isNotBlank(value)) {
+                        // write to file
+                        Files.write(jsonFile, value.getBytes());
+                    }
+                }
+
+            } catch (ConfigurationException e) {
+                log.error(e);
+            }
+
+            // add EAD.xml file to METS
+            String eadUuid = "uuid-" + UUID.randomUUID().toString();
+            Element eadDmd = new Element("dmdSec", metsNamespace);
+            eadDmd.setAttribute("CREATED", creationDate);
+            eadDmd.setAttribute("STATUS", "CURRENT");
+            eadDmd.setAttribute("ID", eadUuid);
+            Element mdRef = new Element("mdRef", metsNamespace);
+            mdRef.setAttribute("LOCTYPE", "URL");
+            mdRef.setAttribute("MDTYPE", "EAD");
+            mdRef.setAttribute("MDTYPEVERSION", "3");
+            mdRef.setAttribute("MIMETYPE", "text/xml");
+            mdRef.setAttribute("CHECKSUMTYPE", "SHA-256");
+
+            String filename = "metadata/descriptive/EAD.xml";
+            mdRef.setAttribute("href", filename, xlinkNamespace);
+            try {
+                mdRef.setAttribute("SIZE", "" + StorageProvider.getInstance().getFileSize(eadFile));
+            } catch (IOException e) {
+                log.error(e);
+            }
+            mdRef.setAttribute("CREATED", StorageProvider.getInstance().getFileCreationTime(eadFile));
+            mdRef.setAttribute("CHECKSUM", StorageProvider.getInstance().createSha256Checksum(eadFile));
+            eadDmd.addContent(mdRef);
+
+            for (int counter = 0; counter < mets.getChildren().size(); counter++) {
+                Element el = mets.getChildren().get(counter);
+                if ("amdSec".equals(el.getName())) {
+                    mets.addContent(counter, eadDmd);
+                    break;
+                }
+            }
+
+            // aff json file to METS
+            String jsonUuid = "uuid-" + UUID.randomUUID().toString();
+            Element jsonDmd = new Element("dmdSec", metsNamespace);
+            jsonDmd.setAttribute("CREATED", creationDate);
+            jsonDmd.setAttribute("STATUS", "CURRENT");
+            jsonDmd.setAttribute("ID", jsonUuid);
+            mdRef = new Element("mdRef", metsNamespace);
+            mdRef.setAttribute("LOCTYPE", "URL");
+            mdRef.setAttribute("MDTYPE", "EAD");
+            mdRef.setAttribute("MIMETYPE", "text/json");
+            mdRef.setAttribute("CHECKSUMTYPE", "SHA-256");
+
+            filename = "metadata/descriptive/node.json";
+            mdRef.setAttribute("href", filename, xlinkNamespace);
+            try {
+                mdRef.setAttribute("SIZE", "" + StorageProvider.getInstance().getFileSize(jsonFile));
+            } catch (IOException e) {
+                log.error(e);
+            }
+            mdRef.setAttribute("CREATED", StorageProvider.getInstance().getFileCreationTime(jsonFile));
+            mdRef.setAttribute("CHECKSUM", StorageProvider.getInstance().createSha256Checksum(jsonFile));
+            jsonDmd.addContent(mdRef);
+
+            for (int counter = 0; counter < mets.getChildren().size(); counter++) {
+                Element el = mets.getChildren().get(counter);
+                if ("amdSec".equals(el.getName())) {
+                    mets.addContent(counter, jsonDmd);
+                    break;
+                }
+            }
+
+            dmdIds = dmdIds + " " + eadUuid + " " + jsonUuid;
+        }
+        return dmdIds;
     }
 
     private void changeAnchorFile(Path anchorFile) {
@@ -1404,4 +1557,22 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         Collections.sort(filesInFolder);
         return filesInFolder;
     }
+
+    private static String findArchiveByNodeId(String metadataName, String metadataValue) {
+        StringBuilder sql = new StringBuilder();
+        sql.append(
+                "select title from archive_record_group where id = (select archive_record_group_id from archive_record_node WHERE ExtractValue(data, '/xml/")
+                .append(metadataName)
+                .append("') = '")
+                .append(metadataValue)
+                .append("')");
+        try (Connection connection = MySQLHelper.getInstance().getConnection()) {
+            QueryRunner run = new QueryRunner();
+            return run.query(connection, sql.toString(), MySQLHelper.resultSetToStringHandler);
+        } catch (SQLException e) {
+            log.error(e);
+        }
+        return null;
+    }
+
 }

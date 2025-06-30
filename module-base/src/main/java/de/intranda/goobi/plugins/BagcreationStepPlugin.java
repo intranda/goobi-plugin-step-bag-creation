@@ -285,7 +285,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             // create export file
 
             MetsModsImportExport exportFilefoExport = new MetsModsImportExport(prefs);
-            exportFilefoExport.setSoftwareName("Goobi bag creation");
             RulesetExtension.extentRuleset(config, exportFilefoExport);
 
             exportFilefoExport.setDigitalDocument(fileformat.getDigitalDocument());

@@ -285,7 +285,6 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
             // create export file
 
             MetsModsImportExport exportFilefoExport = new MetsModsImportExport(prefs);
-            exportFilefoExport.setSoftwareName("Goobi bag creation");
             RulesetExtension.extentRuleset(config, exportFilefoExport);
 
             exportFilefoExport.setDigitalDocument(fileformat.getDigitalDocument());
@@ -1017,6 +1016,10 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
         Element name = agent.getChild("name", metsNamespace);
         name.setText(softwareName);
         Element noteVersion = agent.getChild("note", metsNamespace);
+        if (noteVersion == null) {
+            noteVersion = new Element("note", metsNamespace);
+            agent.addContent(noteVersion);
+        }
         noteVersion.setAttribute("NOTETYPE", "SOFTWARE VERSION", csipNamespace); // SIP20
         noteVersion.setText(GoobiVersion.getVersion());
 

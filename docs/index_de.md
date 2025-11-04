@@ -3,6 +3,10 @@ title: Libsafe Integration
 identifier: intranda_step_bagcreation,intranda_step_bagsubmission
 published: true
 description: Dies ist eine technische Dokumentation für die Integration der Libsafe Langzeitarchivierung an Goobi workflow.
+keywords:
+    - Goobi workflow
+    - Plugin
+    - Step Plugin
 ---
 ## Einführung
 Die vorliegende Dokumentation beschreibt die Installation, Konfiguration und den Einsatz des Plugins zum Ingest in die Langzeitarchivierung Libsafe.

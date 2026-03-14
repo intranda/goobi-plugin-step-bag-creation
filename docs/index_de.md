@@ -54,7 +54,7 @@ Als letztes wird die `tagmanifest-sha256.txt` Datei erstellt. Diese enthält die
 
 
 ### Tar Generierung
-Die zuvor vorbereiteten Ordner und Dateien werden zu einer Tar-Datei zusammgengefasst und im Vorgangsordner gespeichert.
+Die zuvor vorbereiteten Ordner und Dateien werden zu einer Tar-Datei zusammengefasst und im Vorgangsordner gespeichert.
 
 
 ### Datenlieferung
@@ -200,7 +200,7 @@ Der Bereich `<submissionParameter>` beinhaltet Angaben zum Besitzer der Daten, d
         </submissionParameter>
 ```
 
-Neben diesen Feldern enthält die Datei `bag-info.txt` noch eine Reihe weiterer Informationen, wie Erstellungsdatum, Größe des Sets und Oxum, die jedoch nicht konfiguriert werden müssen, da dise automatisch ermittelt werden.
+Neben diesen Feldern enthält die Datei `bag-info.txt` noch eine Reihe weiterer Informationen, wie Erstellungsdatum, Größe des Sets und Oxum, die jedoch nicht konfiguriert werden müssen, da diese automatisch ermittelt werden.
 
 Der Bereich `<additionalMetadata>` dient zur Erweiterung des Regelsatzes. Hier kann ein Mapping für Metadaten, Körperschaften, Personen oder Gruppen hinzugefügt werden, für die im Regelsatz kein Exportmapping vorgesehen ist, weil diese Informationen im regulären Export zum Goobi viewer nicht veröffentlicht werden sollen.
 

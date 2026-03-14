@@ -176,7 +176,7 @@ Im Anschluss erfolgt die Konfiguration der einzelnen Parameter, die auch aus der
         </metsParameter>
 ```
 
-Die einzelnen Parameter und ihre Funktion werden im [Goobi workflow Handbuch](https://docs.goobi.io/goobi-workflow-de/admin/4/4.2) beschrieben.
+Die einzelnen Parameter und ihre Funktion werden im [Goobi workflow Handbuch](https://docs.goobi.io/de/workflow/manual/admin/config_files) beschrieben.
 
 Der Bereich `<submissionParameter>` beinhaltet Angaben zum Besitzer der Daten, die in `bag-info.txt` geschrieben werden.
 

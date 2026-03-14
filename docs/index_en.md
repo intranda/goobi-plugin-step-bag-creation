@@ -178,7 +178,7 @@ The individual parameters, which are also known from the project configuration, 
         </metsParameter>
 ```
 
-The individual parameters and their function are described in the [Goobi workflow manual](https://docs.goobi.io/goobi-workflow-de/admin/4/4.2).
+The individual parameters and their function are described in the [Goobi workflow manual](https://docs.goobi.io/en/workflow/manual/admin/config_files).
 
 The `<submissionParameter>` section contains information about the owner of the data, which is written to `bag-info.txt`.
 

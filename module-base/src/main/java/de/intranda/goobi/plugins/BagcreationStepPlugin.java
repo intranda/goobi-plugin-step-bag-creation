@@ -1562,16 +1562,11 @@ public class BagcreationStepPlugin extends ExportMets implements IStepPluginVers
     }
 
     private static String findArchiveByNodeId(String metadataName, String metadataValue) {
-        StringBuilder sql = new StringBuilder();
-        sql.append(
-                "select title from archive_record_group where id = (select archive_record_group_id from archive_record_node WHERE ExtractValue(data, '/xml/")
-                .append(metadataName)
-                .append("') = '")
-                .append(metadataValue)
-                .append("')");
+        String sql = "select title from archive_record_group where id = "
+                + "(select archive_record_group_id from archive_record_node WHERE ExtractValue(data, '/xml/"
+                + metadataName + "') = ?)";
         try (Connection connection = MySQLHelper.getInstance().getConnection()) {
-            QueryRunner run = new QueryRunner();
-            return run.query(connection, sql.toString(), MySQLHelper.resultSetToStringHandler);
+            return new QueryRunner().query(connection, sql, MySQLHelper.resultSetToStringHandler, metadataValue);
         } catch (SQLException e) {
             log.error(e);
         }
